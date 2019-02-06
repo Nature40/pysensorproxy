@@ -1,0 +1,21 @@
+always:
+  meterings:
+    RandomLow: {}
+    RandomHigh: {}
+    Files: {bytes: 1024}
+  interval_s: 300
+  start: '05:00'
+  end: '23:00'
+
+scheduled:
+  meterings:
+    PiCameraSensor: {}
+    AudioSensor:
+      duration_s: 900
+  schedule:
+  - time: '06:00'
+    height: 5m
+  - time: '06:30'
+    height: 12m
+  - time: '07:00'
+    height: 0m

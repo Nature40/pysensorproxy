@@ -1,8 +1,0 @@
-{
-    "sensors": {
-        "RandomSensor": {"maximum": 10}
-    },
-    "storage": {
-        "location": ""
-    }
-}

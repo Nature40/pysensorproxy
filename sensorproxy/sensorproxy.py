@@ -2,23 +2,46 @@
 
 import argparse
 import json
+import yaml
 
-from sensors import sensors 
+import sensortypes
+
+class SensorProxy:
+    def __init__(self, config_path, metering_path):
+        with open(config_path) as config_file:
+            config = yaml.load(config_file)
+
+        self.storage_path = config["storage"]
+        self.sensors = {}
+        for name, params in config["sensors"].items():
+            sensor = sensortypes.classes[params["type"]](name, self.storage_path, **params)
+            self.sensors[name] = sensor
+
+        with open(metering_path) as metering_file:
+            self.metering = yaml.load(metering_file)
+
+        self.metering_test()
+    
+    def metering_test(self):
+        for name, params in self.metering["always"]["meterings"].items():
+            self.sensors[name].read(**params)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Read, log, safe and forward sensor readings.')
-    parser.add_argument("-c", "--config", help="config file (json)", default="examples/config.json")
-    parser.add_argument("-m", "--measure_protocol", help="measurement protocol", default="/etc/sensorproxy/measurements.json")
+    parser.add_argument("-c", "--config", help="config file (yml)", default="examples/config.yml")
+    parser.add_argument("-m", "--metering", help="metering protocol (yml)", default="examples/measurements.yml")
     args = parser.parse_args()
-    
-    with open(args.config) as config_file:
-        config = json.load(config_file)
-    
-    connected_sensors = []
 
-    for sensor_type, sensor_config in config["sensors"].items():
-        connected_sensors = sensors[sensor_type](path=config["storage"]["location"], **sensor_config)
-        connected_sensors.read()
+    proxy = SensorProxy(args.config, args.metering)
+    
+
+
+    # connected_sensors = []
+
+    # for sensor_name, sensor_config in config["sensors"].items():
+    #     connected_sensors = sensortypes.classes[sensor_name](path=config["storage"]["location"], **sensor_config)
+    #     connected_sensors.read()
 
 
     

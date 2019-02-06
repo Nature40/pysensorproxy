@@ -1,0 +1,10 @@
+sensors:
+  RandomLow:
+    type: Random
+    maximum: 10
+  RandomHigh:
+    type: Random
+    maximum: 100
+  Files:
+    type: RandomFile
+storage: ''
