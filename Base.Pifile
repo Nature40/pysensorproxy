@@ -1,0 +1,33 @@
+FROM 2018-11-13-raspbian-stretch-lite.img
+TO Base.img
+
+PUMP 100
+
+RUN raspi-config nonint do_serial 0
+RUN raspi-config nonint do_ssh 0
+RUN raspi-config nonint do_camera 0
+RUN raspi-config nonint do_i2c 0
+
+RUN bash -c 'echo dtoverlay=i2c-rtc,ds3231 >> /boot/config.txt'
+
+# Disable HDMI out
+RUN bash -c 'sed -i "$ d" /etc/rc.local'
+RUN bash -c 'echo "/usr/bin/tvservice -o" >> /etc/rc.local'
+
+# Install software
+RUN apt-get update
+RUN apt-get install -y \
+    python3 python3-pip \
+    i2c-tools \
+    vim \
+    tmux \
+    git \
+    libusb-1.0-0-dev
+
+RUN pip3 install \
+    Adafruit_DHT \
+    Adafruit_PureIO \
+    Adafruit_GPIO \
+    tsl2561 \
+    picamera \
+    pyyaml
