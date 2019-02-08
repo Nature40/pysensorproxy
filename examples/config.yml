@@ -5,6 +5,9 @@ sensors:
   RandomHigh:
     type: Random
     maximum: 100
+  AM2302:
+    type: AM2302
+    pin: 23
   Files:
     type: RandomFile
 storage: ''

@@ -2,6 +2,7 @@ always:
   meterings:
     RandomLow: {}
     RandomHigh: {}
+    AM2302: {}
     Files: {bytes: 1024}
   interval_s: 300
   start: '05:00'

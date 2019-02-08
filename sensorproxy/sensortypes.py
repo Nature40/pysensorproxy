@@ -5,6 +5,9 @@ import errno
 from typing import Dict, Type
 from abc import ABC, abstractmethod
 
+import random
+import Adafruit_DHT
+
 
 class Sensor:
     def __init__(self, name, storage_path, **kwargs):
@@ -16,7 +19,8 @@ class Sensor:
     def read(self):
         pass
 
-classes: Dict[str, Type[Sensor]] = {}
+# classes: Dict[str, Type[Sensor]] = {}
+classes = {}
 def _register_sensor(cls: Type[Sensor]):
     classes[cls.__name__] = cls
     return cls
@@ -25,7 +29,8 @@ class LogSensor(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.file_path = os.path.join(self.storage_path, f"{int(time.time())}_{self.__class__.__name__}_{self.name}.csv")
+        self.file_path = os.path.join(self.storage_path, "{}_{}_{}.csv".format(
+            int(time.time()), self.__class__.__name__, self.name))
 
 class FileSensor(Sensor):
     def __init__(self, file_ext, *args, **kwargs):
@@ -34,10 +39,9 @@ class FileSensor(Sensor):
 
     @property
     def file_path(self):
-        return os.path.join(self.storage_path, f"{int(time.time())}_{self.__class__.__name__}_{self.name}.{self.file_ext}")
+        return os.path.join(self.storage_path, "{}_{}_{}.{}".format(
+            int(time.time()), self.__class__.__name__, self.name, self.file_ext))
 
-
-import random
 
 @_register_sensor
 class Random(LogSensor):
@@ -49,7 +53,7 @@ class Random(LogSensor):
         ts = time.time()
 
         with open(self.file_path, "a") as file:
-            file.write(f"{ts},{random.randint(0, self.maximum)}\n")
+            file.write("{},{}\n".format(ts, random.randint(0, self.maximum)))
 
 @_register_sensor
 class RandomFile(FileSensor):
@@ -62,6 +66,19 @@ class RandomFile(FileSensor):
         with open(self.file_path, "ab") as file:
             file.write(os.urandom(bytes))
 
+
+@_register_sensor
+class AM2302(LogSensor):
+    def __init__(self, *args, pin=23, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pin = pin
+
+    def read(self):
+        ts = time.time()
+        humidity, temp = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, self.pin)
+
+        with open(self.file_path, "a") as file:
+            file.write("{},{},{}\n".format(ts, humidity, temp))
 
 
 # import picamera
