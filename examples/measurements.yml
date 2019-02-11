@@ -4,6 +4,7 @@ always:
     RandomHigh: {}
     Files: {bytes: 1024}
     AM2302: {}
+    TSL2561: {}
     Mic: {}
     Cam: {}
   interval_s: 300

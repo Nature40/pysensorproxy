@@ -10,6 +10,8 @@ sensors:
   AM2302:
     type: AM2302
     pin: 23
+  TSL2561:
+    type: TSL2561
   Mic:
     type: Microphone
     device_name: hw:1,0

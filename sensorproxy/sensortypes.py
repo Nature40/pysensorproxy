@@ -90,6 +90,21 @@ class AM2302(LogSensor):
 
 
 @_register_sensor
+class TSL2561(LogSensor):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def read(self):
+        import tsl2561
+
+        ts = time.time()
+        lux = tsl2561.TSL2561().lux()
+
+        with open(self.file_path, "a") as file:
+            file.write("{},{}\n".format(ts, lux))
+
+
+@_register_sensor
 class Microphone(FileSensor):
     def __init__(self, *args, device_name="hw:1,0", file_type="wav",
                  duration_sec=30, format="S16_LE", rate=44100, **kwargs):
