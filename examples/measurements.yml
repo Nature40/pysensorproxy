@@ -3,6 +3,7 @@ always:
     RandomLow: {}
     RandomHigh: {}
     AM2302: {}
+    Mic: {}
     Files: {bytes: 1024}
   interval_s: 300
   start: '05:00'
