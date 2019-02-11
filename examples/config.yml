@@ -5,6 +5,8 @@ sensors:
   RandomHigh:
     type: Random
     maximum: 100
+  Files:
+    type: RandomFile
   AM2302:
     type: AM2302
     pin: 23
@@ -15,6 +17,6 @@ sensors:
     duration_sec: 10
     format: S16_LE
     rate: 44100
-  Files:
-    type: RandomFile
+  Cam:
+    type: Camera
 storage: ''

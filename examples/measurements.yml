@@ -2,9 +2,10 @@ always:
   meterings:
     RandomLow: {}
     RandomHigh: {}
+    Files: {bytes: 1024}
     AM2302: {}
     Mic: {}
-    Files: {bytes: 1024}
+    Cam: {}
   interval_s: 300
   start: '05:00'
   end: '23:00'

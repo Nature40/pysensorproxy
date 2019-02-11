@@ -113,22 +113,19 @@ class Microphone(FileSensor):
             self.file_path])
 
 
-# import picamera
+@_register_sensor
+class Camera(FileSensor):
+    def __init__(self, *args, format="jpeg", **kwargs):
+        super().__init__(format, *args, **kwargs)
+        self.format = format
 
-# @_register_sensor
-# class PiCamera(Sensor):
-#     def __init__(self, _format="jpeg", *args, **kwargs):
-#         self._format = _format
-#         super().__init__(*args, **kwargs)
+    def read(self):
+        import picamera
 
-#     def read(self):
-#         ts = time.time()
-#         file_name = os.path.join(self.storage_path, f"picam-{ts}.jpg")
+        with picamera.PiCamera() as camera:
+            camera.resolution = (3280, 2464)
+            camera.start_preview()
+            time.sleep(2)
 
-#         with picamera.PiCamera() as camera:
-#             camera.resolution = (3280, 2464)
-#             camera.start_preview()
-#             time.sleep(2)
-
-#             camera.capture(file_name, format=self._format)
-#             camera.stop_preview()
+            camera.capture(self.file_path, format=self.format)
+            camera.stop_preview()
