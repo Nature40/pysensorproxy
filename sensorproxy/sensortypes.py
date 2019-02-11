@@ -1,13 +1,8 @@
-import errno
 import os
-import subprocess
 import time
 
 from abc import ABC, abstractmethod
-from typing import Dict, Type
-
-import Adafruit_DHT
-import random
+from typing import Type
 
 
 class Sensor:
@@ -15,14 +10,15 @@ class Sensor:
         self.name = name
         self.storage_path = storage_path
         super().__init__()
-    
+
     @abstractmethod
     def read(self):
         pass
 
 
-# classes: Dict[str, Type[Sensor]] = {}
 classes = {}
+
+
 def _register_sensor(cls: Type[Sensor]):
     classes[cls.__name__] = cls
     return cls
@@ -44,7 +40,8 @@ class FileSensor(Sensor):
     @property
     def file_path(self):
         return os.path.join(self.storage_path, "{}_{}_{}.{}".format(
-            int(time.time()), self.__class__.__name__, self.name, self.file_ext))
+            int(time.time()), self.__class__.__name__,
+            self.name, self.file_ext))
 
 
 @_register_sensor
@@ -54,6 +51,8 @@ class Random(LogSensor):
         self.maximum = maximum
 
     def read(self):
+        import random
+
         ts = time.time()
 
         with open(self.file_path, "a") as file:
@@ -66,6 +65,8 @@ class RandomFile(FileSensor):
         super().__init__("bin", *args, **kwargs)
 
     def read(self, bytes):
+        import random
+
         ts = int(time.time())
 
         with open(self.file_path, "ab") as file:
@@ -79,6 +80,8 @@ class AM2302(LogSensor):
         self.pin = pin
 
     def read(self):
+        import Adafruit_DHT
+
         ts = time.time()
         humidity, temp = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, self.pin)
 
@@ -98,6 +101,8 @@ class Microphone(FileSensor):
         self.rate = rate
 
     def read(self):
+        import subprocess
+
         subprocess.run([
             "arecord",
             "-D", self.device_name,
