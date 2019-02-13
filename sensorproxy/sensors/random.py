@@ -19,6 +19,8 @@ class Random(LogSensor):
             file.write("{},{}\n".format(
                 ts, random.randint(0, self.maximum)))
 
+        return self.file_path
+
 
 @register_sensor
 class RandomFile(FileSensor):
@@ -26,5 +28,9 @@ class RandomFile(FileSensor):
         super().__init__("bin", *args, **kwargs)
 
     def read(self, bytes):
-        with open(self.file_path, "ab") as file:
+        file_path = self.file_path
+
+        with open(file_path, "ab") as file:
             file.write(os.urandom(bytes))
+
+        return file_path

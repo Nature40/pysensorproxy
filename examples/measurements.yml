@@ -2,17 +2,14 @@ always:
   meterings:
     AM2302: {}
     TSL2561: {}
-    Mic: {duration_s: 1}
-    Cam: {}
   interval_s: 300
-  start: '05:00'
-  end: '23:00'
+  start: '00:00'
+  end: '24:00'
 
 scheduled:
   meterings:
-    PiCameraSensor: {}
-    AudioSensor:
-      duration_s: 900
+    Cam: {}
+    Mic: {}
   schedule:
   - time: '06:00'
     height: 5m

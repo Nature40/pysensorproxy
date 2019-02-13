@@ -15,13 +15,9 @@ class Sensor:
     def read(self):
         pass
 
-
-classes = {}
-
-
-def register_sensor(cls: Type[Sensor]):
-    classes[cls.__name__] = cls
-    return cls
+    def test(self, *args, **kwargs):
+        testfile_path = self.read(*args, **kwargs)
+        os.remove(testfile_path)
 
 
 class LogSensor(Sensor):
@@ -42,3 +38,15 @@ class FileSensor(Sensor):
         return os.path.join(self.storage_path, "{}_{}_{}.{}".format(
             int(time.time()), self.__class__.__name__,
             self.name, self.file_ext))
+
+
+classes = {}
+
+
+def register_sensor(cls: Type[Sensor]):
+    classes[cls.__name__] = cls
+    return cls
+
+
+class SensorNotAvailableException(Exception):
+    pass

@@ -15,6 +15,8 @@ class Microphone(FileSensor):
         self.rate = rate
 
     def read(self, duration_s=1):
+        file_path = self.file_path
+
         subprocess.run([
             "arecord",
             "-D", self.device_name,
@@ -22,4 +24,6 @@ class Microphone(FileSensor):
             "-f", self.format,
             "-r", str(self.rate),
             "-d", str(duration_s),
-            self.file_path])
+            file_path])
+
+        return file_path

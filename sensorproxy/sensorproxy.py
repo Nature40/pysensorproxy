@@ -28,8 +28,14 @@ class SensorProxy:
         self.metering_test()
 
     def metering_test(self):
-        for name, params in self.metering["always"]["meterings"].items():
-            self.sensors[name].read(**params)
+        meterings = {**self.metering["always"]["meterings"],
+                     **self.metering["scheduled"]["meterings"]}
+
+        for name, params in meterings.items():
+            try:
+                self.sensors[name].test(**params)
+            except sensors.base.SensorNotAvailableException as e:
+                print("Sensor {} is not available: {}".format(name, e))
 
 
 if __name__ == "__main__":
