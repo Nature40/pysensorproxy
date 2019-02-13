@@ -5,6 +5,9 @@ import json
 import yaml
 
 import sensors.base
+import sensors.optical
+import sensors.audio
+import sensors.environment
 
 
 class SensorProxy:

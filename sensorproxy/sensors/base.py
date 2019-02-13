@@ -19,7 +19,7 @@ class Sensor:
 classes = {}
 
 
-def _register_sensor(cls: Type[Sensor]):
+def register_sensor(cls: Type[Sensor]):
     classes[cls.__name__] = cls
     return cls
 
@@ -42,110 +42,3 @@ class FileSensor(Sensor):
         return os.path.join(self.storage_path, "{}_{}_{}.{}".format(
             int(time.time()), self.__class__.__name__,
             self.name, self.file_ext))
-
-
-@_register_sensor
-class Random(LogSensor):
-    def __init__(self, *args, maximum=100, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.maximum = maximum
-
-    def read(self):
-        import random
-
-        ts = time.time()
-
-        with open(self.file_path, "a") as file:
-            file.write("{},{}\n".format(ts, random.randint(0, self.maximum)))
-
-
-@_register_sensor
-class RandomFile(FileSensor):
-    def __init__(self, *args, **kwargs):
-        super().__init__("bin", *args, **kwargs)
-
-        global random
-        import random
-
-    def read(self, bytes):
-        with open(self.file_path, "ab") as file:
-            file.write(os.urandom(bytes))
-
-
-@_register_sensor
-class AM2302(LogSensor):
-    def __init__(self, *args, pin=23, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        global Adafruit_DHT
-        import Adafruit_DHT
-
-        self.pin = pin
-
-    def read(self):
-        ts = time.time()
-        humidity, temp = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, self.pin)
-
-        with open(self.file_path, "a") as file:
-            file.write("{},{},{}\n".format(ts, humidity, temp))
-
-
-@_register_sensor
-class TSL2561(LogSensor):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        global tsl2561
-        import tsl2561
-
-    def read(self):
-        ts = time.time()
-        lux = tsl2561.TSL2561().lux()
-
-        with open(self.file_path, "a") as file:
-            file.write("{},{}\n".format(ts, lux))
-
-
-@_register_sensor
-class Microphone(FileSensor):
-    def __init__(self, *args, device_name="hw:1,0", file_type="wav",
-                 duration_sec=30, format="S16_LE", rate=44100, **kwargs):
-        super().__init__(file_type, *args, **kwargs)
-
-        global subprocess
-        import subprocess
-
-        self.device_name = device_name
-        self.file_type = file_type
-        self.format = format
-        self.rate = rate
-
-    def read(self, duration_s=1):
-        subprocess.run([
-            "arecord",
-            "-D", self.device_name,
-            "-t", self.file_type,
-            "-f", self.format,
-            "-r", str(self.rate),
-            "-d", str(duration_s),
-            self.file_path])
-
-
-@_register_sensor
-class PiCamera(FileSensor):
-    def __init__(self, *args, format="jpeg", **kwargs):
-        super().__init__(format, *args, **kwargs)
-
-        global picamera
-        import picamera
-
-        self.format = format
-
-    def read(self):
-        with picamera.PiCamera() as camera:
-            camera.resolution = (3280, 2464)
-            camera.start_preview()
-            time.sleep(2)
-
-            camera.capture(self.file_path, format=self.format)
-            camera.stop_preview()
