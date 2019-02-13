@@ -4,7 +4,7 @@ import argparse
 import json
 import yaml
 
-import sensortypes
+import sensors.base
 
 
 class SensorProxy:
@@ -15,8 +15,8 @@ class SensorProxy:
         self.storage_path = config["storage"]
         self.sensors = {}
         for name, params in config["sensors"].items():
-            sensor = sensortypes.classes[params["type"]](
-                    name, self.storage_path, **params)
+            sensor = sensors.base.classes[params["type"]](
+                name, self.storage_path, **params)
             self.sensors[name] = sensor
 
         with open(metering_path) as metering_file:
@@ -31,13 +31,13 @@ class SensorProxy:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-            description='Read, log, safe and forward sensor readings.')
+        description='Read, log, safe and forward sensor readings.')
     parser.add_argument(
-            "-c", "--config", help="config file (yml)",
-            default="examples/config.yml")
+        "-c", "--config", help="config file (yml)",
+        default="examples/config.yml")
     parser.add_argument(
-            "-m", "--metering", help="metering protocol (yml)",
-            default="examples/measurements.yml")
+        "-m", "--metering", help="metering protocol (yml)",
+        default="examples/measurements.yml")
     args = parser.parse_args()
 
     proxy = SensorProxy(args.config, args.metering)

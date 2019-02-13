@@ -64,11 +64,10 @@ class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
         super().__init__("bin", *args, **kwargs)
 
-    def read(self, bytes):
+        global random
         import random
 
-        ts = int(time.time())
-
+    def read(self, bytes):
         with open(self.file_path, "ab") as file:
             file.write(os.urandom(bytes))
 
@@ -77,11 +76,13 @@ class RandomFile(FileSensor):
 class AM2302(LogSensor):
     def __init__(self, *args, pin=23, **kwargs):
         super().__init__(*args, **kwargs)
+
+        global Adafruit_DHT
+        import Adafruit_DHT
+
         self.pin = pin
 
     def read(self):
-        import Adafruit_DHT
-
         ts = time.time()
         humidity, temp = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, self.pin)
 
@@ -94,9 +95,10 @@ class TSL2561(LogSensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def read(self):
+        global tsl2561
         import tsl2561
 
+    def read(self):
         ts = time.time()
         lux = tsl2561.TSL2561().lux()
 
@@ -109,34 +111,37 @@ class Microphone(FileSensor):
     def __init__(self, *args, device_name="hw:1,0", file_type="wav",
                  duration_sec=30, format="S16_LE", rate=44100, **kwargs):
         super().__init__(file_type, *args, **kwargs)
+
+        global subprocess
+        import subprocess
+
         self.device_name = device_name
         self.file_type = file_type
-        self.duration_sec = duration_sec
         self.format = format
         self.rate = rate
 
-    def read(self):
-        import subprocess
-
+    def read(self, duration_s=1):
         subprocess.run([
             "arecord",
             "-D", self.device_name,
             "-t", self.file_type,
-            "-d", str(self.duration_sec),
             "-f", self.format,
             "-r", str(self.rate),
+            "-d", str(duration_s),
             self.file_path])
 
 
 @_register_sensor
-class Camera(FileSensor):
+class PiCamera(FileSensor):
     def __init__(self, *args, format="jpeg", **kwargs):
         super().__init__(format, *args, **kwargs)
+
+        global picamera
+        import picamera
+
         self.format = format
 
     def read(self):
-        import picamera
-
         with picamera.PiCamera() as camera:
             camera.resolution = (3280, 2464)
             camera.start_preview()

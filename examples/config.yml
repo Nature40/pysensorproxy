@@ -1,24 +1,15 @@
 sensors:
-  RandomLow:
-    type: Random
-    maximum: 10
-  RandomHigh:
-    type: Random
-    maximum: 100
-  Files:
-    type: RandomFile
   AM2302:
     type: AM2302
-    pin: 23
+    pin: 4
   TSL2561:
     type: TSL2561
   Mic:
     type: Microphone
     device_name: hw:1,0
     file_type: wav
-    duration_sec: 10
     format: S16_LE
     rate: 44100
   Cam:
-    type: Camera
+    type: PiCamera
 storage: ''
