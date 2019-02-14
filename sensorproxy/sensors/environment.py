@@ -1,6 +1,9 @@
 import time
+import logging
 
 from .base import register_sensor, LogSensor, SensorNotAvailableException
+
+log = logging.getLogger("pysensorproxy.sensors.environment")
 
 
 @register_sensor
@@ -15,6 +18,7 @@ class AM2302(LogSensor):
 
     def read(self):
         ts = time.time()
+        log.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
             humidity, temp = Adafruit_DHT.read_retry(
@@ -25,6 +29,8 @@ class AM2302(LogSensor):
         if humidity == None or temp == None:
             raise SensorNotAvailableException(
                 "No AM2302 instance on pin {}".format(self.pin))
+
+        log.info("Read {}°C, {}% humidity".format(temp, humidity))
 
         with open(self.file_path, "a") as file:
             file.write("{},{},{}\n".format(ts, humidity, temp))
@@ -40,14 +46,22 @@ class TSL2561(LogSensor):
         global tsl2561
         import tsl2561
 
+        self.tsl2561 = tsl2561.TSL2561()
+        self.tsl2561
+
     def read(self):
         ts = time.time()
+        log.debug("Reading TSL2561 sensor via I2C")
+
         try:
-            lux = tsl2561.TSL2561().lux()
+            broadband, ir = self.tsl2561._get_luminosity()
+            lux = self.tsl2561._calculate_lux(broadband, ir)
         except OSError as e:
             raise SensorNotAvailableException(e)
 
+        log.info("Read {} lux (br: {}, ir: {})".format(lux, broadband, ir))
+
         with open(self.file_path, "a") as file:
-            file.write("{},{}\n".format(ts, lux))
+            file.write("{},{},{},{}\n".format(ts, lux, broadband, ir))
 
         return self.file_path

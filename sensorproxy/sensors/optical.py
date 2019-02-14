@@ -1,6 +1,9 @@
 import time
+import logging
 
 from .base import register_sensor, FileSensor, SensorNotAvailableException
+
+log = logging.getLogger("pysensorproxy.sensors.optical")
 
 
 @register_sensor
@@ -15,6 +18,8 @@ class PiCamera(FileSensor):
 
     def read(self, res_X=3280, res_Y=2464, adjust_time_s=2):
         file_path = self.file_path
+        log.debug("Reading PiCamera with {}x{} for {}s".format(
+            res_X, res_Y, adjust_time_s))
 
         try:
             with picamera.PiCamera() as camera:
@@ -26,5 +31,7 @@ class PiCamera(FileSensor):
                 camera.stop_preview()
         except picamera.exc.PiCameraMMALError as e:
             raise SensorNotAvailableException(e)
+
+        log.info("image file written to '{}'".format(file_path))
 
         return file_path

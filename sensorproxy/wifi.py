@@ -41,14 +41,14 @@ def run(args):
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
 
-    stdout = p.stdout.read().decode()
-    stderr = p.stderr.read().decode()
+    stdout = p.stdout.read()
+    stderr = p.stderr.read()
 
     if p.returncode != 0:
         raise Exception("{} error {}: {}".format(
-            args[0], p.returncode, stderr))
+            args[0], p.returncode, stderr.decode()))
 
-    return stdout
+    return stdout.decode()
 
 
 class WiFiManager:
