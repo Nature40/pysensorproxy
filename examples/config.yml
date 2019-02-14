@@ -12,4 +12,14 @@ sensors:
     rate: 44100
   Cam:
     type: PiCamera
+
 storage: ''
+wifi:
+  interface: "wlan0"
+
+lift:
+  ssid: 'LiftSystem 949f'
+  psk: 'supersicher'
+  hall_bottom: 5
+  hall_top: 6
+
