@@ -1,19 +1,19 @@
 sensors:
-  AM2302:
+  am2302:
     type: AM2302
     pin: 4
-  TSL2561:
+  lumen:
     type: TSL2561
-  Mic:
+  mic:
     type: Microphone
     device_name: hw:1,0
     file_type: wav
     format: S16_LE
     rate: 44100
-  Cam:
+  cam:
     type: PiCamera
 
-storage: ''
+storage: '/tmp/pysensorproxy'
 wifi:
   interface: "wlan0"
 

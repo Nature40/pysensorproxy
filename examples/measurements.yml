@@ -1,17 +1,15 @@
-always:
+ongoing:
   meterings:
-    AM2302: {}
-    TSL2561: {}
-  interval_s: 300
-  start: '00:00'
-  end: '24:00'
+    am2302: {}
+    lumen: {}
+  interval_s: 20
 
 scheduled:
   meterings:
-    Cam: {}
-    Mic: {}
+    cam: {}
+    mic: {}
   schedule:
-  - time: '06:00'
+  - time: '13:49'
     height: 5m
   - time: '06:30'
     height: 12m

@@ -54,6 +54,7 @@ class FileSensor(Sensor):
     def __init__(self, file_ext, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.file_ext = file_ext
+        self.records = []
 
     @property
     def file_path(self):
@@ -78,8 +79,9 @@ class FileSensor(Sensor):
 
         if dry:
             os.remove(file_path)
-            file_path = None
+            return None
 
+        self.records.append(os.path.split(file_path)[1])
         return file_path
 
 
