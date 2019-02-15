@@ -1,5 +1,6 @@
 import subprocess
 import logging
+import os
 
 from .base import register_sensor, FileSensor, SensorNotAvailableException
 
@@ -17,8 +18,7 @@ class Microphone(FileSensor):
         self.format = format
         self.rate = rate
 
-    def read(self, duration_s=1):
-        file_path = self.file_path
+    def _read(self, file_path, duration_s=1):
         cmd = [
             "arecord",
             "-D", self.device_name,
@@ -40,5 +40,3 @@ class Microphone(FileSensor):
                 "arecord returned {}: {}".format(p.returncode, stderr.decode()))
 
         log.info("audio file written to '{}'".format(file_path))
-
-        return file_path

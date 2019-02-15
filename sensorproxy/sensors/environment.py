@@ -16,26 +16,26 @@ class AM2302(LogSensor):
 
         self.pin = pin
 
-    def read(self):
-        ts = time.time()
+    @property
+    def _header(self):
+        return ["temp", "humid"]
+
+    def _read(self):
         log.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
-            humidity, temp = Adafruit_DHT.read_retry(
+            humid, temp = Adafruit_DHT.read_retry(
                 Adafruit_DHT.AM2302, self.pin)
         except RuntimeError as e:
             raise SensorNotAvailableException(e)
 
-        if humidity == None or temp == None:
+        if humid == None or temp == None:
             raise SensorNotAvailableException(
                 "No AM2302 instance on pin {}".format(self.pin))
 
-        log.info("Read {}°C, {}% humidity".format(temp, humidity))
+        log.info("Read {}°C, {}% humidity".format(temp, humid))
 
-        with open(self.file_path, "a") as file:
-            file.write("{},{},{}\n".format(ts, humidity, temp))
-
-        return self.file_path
+        return [temp, humid]
 
 
 @register_sensor
@@ -49,10 +49,11 @@ class TSL2561(LogSensor):
         self.tsl2561 = tsl2561.TSL2561()
         self.tsl2561
 
-    def read(self):
-        ts = time.time()
-        log.debug("Reading TSL2561 sensor via I2C")
+    @property
+    def _header(self):
+        return ["lux", "broadband", "ir"]
 
+    def _read(self):
         try:
             broadband, ir = self.tsl2561._get_luminosity()
             lux = self.tsl2561._calculate_lux(broadband, ir)
@@ -61,7 +62,4 @@ class TSL2561(LogSensor):
 
         log.info("Read {} lux (br: {}, ir: {})".format(lux, broadband, ir))
 
-        with open(self.file_path, "a") as file:
-            file.write("{},{},{},{}\n".format(ts, lux, broadband, ir))
-
-        return self.file_path
+        return [lux, broadband, ir]

@@ -12,14 +12,12 @@ class Random(LogSensor):
 
         self.maximum = maximum
 
-    def read(self):
-        ts = time.time()
+    @property
+    def _header(self):
+        return ["int"]
 
-        with open(self.file_path, "a") as file:
-            file.write("{},{}\n".format(
-                ts, random.randint(0, self.maximum)))
-
-        return self.file_path
+    def _read(self):
+        return [random.randint(0, self.maximum)]
 
 
 @register_sensor
@@ -27,9 +25,7 @@ class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
         super().__init__("bin", *args, **kwargs)
 
-    def read(self, bytes):
-        file_path = self.file_path
-
+    def _read(self, file_path, bytes):
         with open(file_path, "ab") as file:
             file.write(os.urandom(bytes))
 

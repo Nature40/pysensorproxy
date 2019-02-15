@@ -16,8 +16,7 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def read(self, res_X=3280, res_Y=2464, adjust_time_s=2):
-        file_path = self.file_path
+    def _read(self, file_path, res_X=3280, res_Y=2464, adjust_time_s=2):
         log.debug("Reading PiCamera with {}x{} for {}s".format(
             res_X, res_Y, adjust_time_s))
 
@@ -33,5 +32,3 @@ class PiCamera(FileSensor):
             raise SensorNotAvailableException(e)
 
         log.info("image file written to '{}'".format(file_path))
-
-        return file_path
