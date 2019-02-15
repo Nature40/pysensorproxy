@@ -7,9 +7,11 @@ import logging
 import time
 import threading
 import os
+import datetime
 
 import schedule
 import flask
+from pytimeparse import parse as parse_time
 
 import sensors.base
 import sensors.optical
@@ -21,8 +23,8 @@ from lift import Lift
 log = logging.getLogger("pysensorproxy")
 
 
-def run_threaded(job_func):
-    job_thread = threading.Thread(target=job_func)
+def run_threaded(job_func, *args):
+    job_thread = threading.Thread(target=job_func, args=args)
     job_thread.start()
 
 
@@ -63,17 +65,9 @@ class SensorProxy:
 
         log.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
-            metering = yaml.load(metering_file)
+            self.meterings = yaml.load(metering_file)
 
-        self.ongoing = SensorProxy.Metering()
-        self.ongoing.interval_s = metering["ongoing"]["interval_s"]
-        self.ongoing.meterings = metering["ongoing"]["meterings"]
-
-        self.scheduled = SensorProxy.Metering()
-        self.scheduled.schedule = metering["scheduled"]["schedule"]
-        self.scheduled.meterings = metering["scheduled"]["meterings"]
-
-        self._test_metering()
+        # self._test_metering()
         # self._test_lift()
 
     def _test_lift(self):
@@ -83,46 +77,48 @@ class SensorProxy:
             self.lift.disconnect()
 
     def _test_metering(self):
-        self._meter_ongoing()
-        self._meter_scheduled()
+        for name, metering in self.meterings.items():
+            log.debug("Testing metering {}".format(name))
+            for sensor_name, params in metering["sensors"].items():
+                self._meter(sensor_name, params)
 
-    def _meter_ongoing(self):
-        log.info("ongoing metering started")
-        for name, params in self.ongoing.meterings.items():
-            sensor = self.sensors[name]
-            try:
-                sensor.record(**params)
-            except sensors.base.SensorNotAvailableException as e:
-                log.warn("Sensor {} is not available: {}".format(name, e))
+    def _meter(self, sensor_name: str, params: dict):
+        sensor = self.sensors[sensor_name]
+        try:
+            sensor.record(**params)
+        except sensors.base.SensorNotAvailableException as e:
+            log.warn("Sensor {} is not available: {}".format(sensor_name, e))
 
-        log.info("ongoing metering finished")
+    def _schedule_metering(self, name: str, metering: dict):
+        start = 0
+        end = 24 * 60 * 60
+        interval = parse_time(metering["schedule"]["interval"])
 
-    def _meter_scheduled(self, threaded=False):
-        log.info("scheduled metering started")
-        for name, params in self.scheduled.meterings.items():
-            sensor = self.sensors[name]
-            try:
-                sensor.record(**params)
-            except sensors.base.SensorNotAvailableException as e:
-                log.warn("Sensor {} is not available: {}".format(name, e))
+        if "start" in metering["schedule"]:
+            start = parse_time(metering["schedule"]["start"])
+        if "end" in metering["schedule"]:
+            end = parse_time(metering["schedule"]["end"])
 
-        log.info("scheduled metering finished")
+        log.info("metering {} from {} until {}, every {}".format(
+            name, start, end, interval))
+
+        for sensor_name, params in metering["sensors"].items():
+            for day_second in range(start, end, interval):
+                # TODO: remove timezone information here
+                ts = datetime.datetime.fromtimestamp(day_second)
+                time = ts.time()
+
+                s = schedule.every().day
+                s.at_time = time
+                s.do(run_threaded, self._meter, sensor_name, params)
+
+                log.info("scheduled {}, next run: {}".format(
+                    sensor_name, s.next_run))
 
     def run(self):
-        # schedule ongoing meterings
-        schedule.every(self.ongoing.interval_s).seconds.do(
-            run_threaded, self._meter_ongoing)
-        log.info("scheduling ongoing meterings for every {} seconds".format(
-            self.ongoing.interval_s))
+        for name, metering in self.meterings.items():
+            self._schedule_metering(name, metering)
 
-        # schedule meterings for distinct times
-        for entry in self.scheduled.schedule:
-            job = schedule.every().day.at(entry["time"]).do(
-                run_threaded, self._meter_scheduled)
-            log.info("scheduled metering for {}".format(
-                job.next_run))
-
-        # run the schedule
         while True:
             schedule.run_pending()
             time.sleep(1)

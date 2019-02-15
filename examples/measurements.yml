@@ -1,17 +1,15 @@
 ongoing:
-  meterings:
+  sensors:
     am2302: {}
     lumen: {}
-  interval_s: 20
+  schedule:
+    interval: "5m"
 
-scheduled:
-  meterings:
+morning:
+  sensors:
     cam: {}
     mic: {}
   schedule:
-  - time: '13:49'
-    height: 5m
-  - time: '06:30'
-    height: 12m
-  - time: '07:00'
-    height: 0m
+    start: "06h"
+    end: "11h"
+    interval: "30m"
