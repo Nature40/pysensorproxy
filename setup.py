@@ -17,12 +17,12 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-dependencies = []
+dependencies = ["schedule", "flask", "pytimeparse"]
 
 setup(
     name="sensorproxy",
     version="0.1",
-    description="Python client for serval-dna REST interface",
+    description="Python software to read out sensors",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/nature40/pysensorproxy",
@@ -46,4 +46,6 @@ setup(
         "Bug Reports": "https://github.com/nature40/pysensorproxy/issues",
         "Source": "https://github.com/nature40/pysensorproxy",
     },
+    entry_points={'console_scripts': [
+        'sensorproxy=sensorproxy.app:main']},
 )

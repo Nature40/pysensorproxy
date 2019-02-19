@@ -13,12 +13,12 @@ import schedule
 import flask
 from pytimeparse import parse as parse_time
 
-import sensors.base
-import sensors.optical
-import sensors.audio
-import sensors.environment
-from wifi import WiFiManager
-from lift import Lift
+import sensorproxy.sensors.base
+import sensorproxy.sensors.optical
+import sensorproxy.sensors.audio
+import sensorproxy.sensors.environment
+from sensorproxy.wifi import WiFiManager
+from sensorproxy.lift import Lift
 
 log = logging.getLogger("pysensorproxy")
 
@@ -146,24 +146,7 @@ def setup_logging(logfile_path):
     return logger
 
 
-parser = argparse.ArgumentParser(
-    description='Read, log, safe and forward sensor readings.')
-parser.add_argument(
-    "-c", "--config", help="config file (yml)",
-    default="examples/config.yml")
-parser.add_argument(
-    "-m", "--metering", help="metering protocol (yml)",
-    default="examples/measurements.yml")
-parser.add_argument(
-    "-l", "--log", help="logfile", default="sensorproxy.log")
-parser.add_argument(
-    "-p", "--port", help="bind port for web interface", default=80, type=int)
-args = parser.parse_args()
-
-
-logger = setup_logging(args.log)
 app = flask.Flask(__name__)
-proxy = SensorProxy(args.config, args.metering)
 
 
 @app.route("/log")
@@ -203,8 +186,30 @@ def serve_sensor_file(name, file_name):
     flask.abort(404)
 
 
-flask_thread = threading.Thread(
-    target=app.run, kwargs={"host": "0.0.0.0", "port": args.port})
-flask_thread.start()
+def main():
+    parser = argparse.ArgumentParser(
+        description='Read, log, safe and forward sensor readings.')
+    parser.add_argument(
+        "-c", "--config", help="config file (yml)",
+        default="examples/config.yml")
+    parser.add_argument(
+        "-m", "--metering", help="metering protocol (yml)",
+        default="examples/measurements.yml")
+    parser.add_argument(
+        "-l", "--log", help="logfile", default="sensorproxy.log")
+    parser.add_argument(
+        "-p", "--port", help="bind port for web interface", default=80, type=int)
+    args = parser.parse_args()
 
-proxy.run()
+    logger = setup_logging(args.log)
+    proxy = SensorProxy(args.config, args.metering)
+
+    flask_thread = threading.Thread(
+        target=app.run, kwargs={"host": "0.0.0.0", "port": args.port})
+    flask_thread.start()
+
+    proxy.run()
+
+
+if __name__ == "__main__":
+    main()
