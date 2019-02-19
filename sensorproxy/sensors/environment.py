@@ -26,9 +26,6 @@ class AM2302(LogSensor):
         try:
             humid, temp = Adafruit_DHT.read_retry(
                 Adafruit_DHT.AM2302, self.pin)
-
-            humid = round(humid, 3)
-            temp = round(temp, 3)
         except RuntimeError as e:
             raise SensorNotAvailableException(e)
 
@@ -36,6 +33,8 @@ class AM2302(LogSensor):
             raise SensorNotAvailableException(
                 "No AM2302 instance on pin {}".format(self.pin))
 
+        humid = round(humid, 3)
+        temp = round(temp, 3)
         log.info("Read {}°C, {}% humidity".format(temp, humid))
 
         return [temp, humid]
@@ -49,14 +48,22 @@ class TSL2561(LogSensor):
         global tsl2561
         import tsl2561
 
-        self.tsl2561 = tsl2561.TSL2561()
-        self.tsl2561
+        try:
+            self.tsl2561 = tsl2561.TSL2561()
+        except OSError:
+            self.tsl2561 = None
 
     @property
     def _header(self):
         return ["lux", "broadband", "ir"]
 
     def _read(self):
+        if self.tsl2561 == None:
+            try:
+                self.tsl2561 = tsl2561.TSL2561()
+            except OSError as e:
+                raise SensorNotAvailableException(e)
+
         try:
             broadband, ir = self.tsl2561._get_luminosity()
             lux = self.tsl2561._calculate_lux(broadband, ir)

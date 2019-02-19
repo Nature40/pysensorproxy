@@ -4,7 +4,7 @@ import logging
 
 import RPi.GPIO as gpio
 
-from wifi import WiFi, WiFiManager
+from sensorproxy.wifi import WiFi, WiFiManager
 
 log = logging.getLogger("pysensorproxy.lift")
 

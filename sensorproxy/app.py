@@ -50,7 +50,7 @@ class SensorProxy:
 
         self.sensors = {}
         for name, params in config["sensors"].items():
-            sensor_cls = sensors.base.classes[params["type"]]
+            sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
             sensor = sensor_cls(name, self.storage_path, **params)
             self.sensors[name] = sensor
 
@@ -67,7 +67,7 @@ class SensorProxy:
         with open(metering_path) as metering_file:
             self.meterings = yaml.load(metering_file)
 
-        # self._test_metering()
+        self._test_metering()
         # self._test_lift()
 
     def _test_lift(self):
@@ -86,7 +86,7 @@ class SensorProxy:
         sensor = self.sensors[sensor_name]
         try:
             sensor.record(**params)
-        except sensors.base.SensorNotAvailableException as e:
+        except sensorproxy.sensors.base.SensorNotAvailableException as e:
             log.warn("Sensor {} is not available: {}".format(sensor_name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
@@ -147,6 +147,22 @@ def setup_logging(logfile_path):
 
 
 app = flask.Flask(__name__)
+parser = argparse.ArgumentParser(
+    description='Read, log, safe and forward sensor readings.')
+parser.add_argument(
+    "-c", "--config", help="config file (yml)",
+    default="examples/config.yml")
+parser.add_argument(
+    "-m", "--metering", help="metering protocol (yml)",
+    default="examples/measurements.yml")
+parser.add_argument(
+    "-l", "--log", help="logfile", default="sensorproxy.log")
+parser.add_argument(
+    "-p", "--port", help="bind port for web interface", default=80, type=int)
+args = parser.parse_args()
+
+proxy = SensorProxy(args.config, args.metering)
+logger = setup_logging(args.log)
 
 
 @app.route("/log")
@@ -164,10 +180,10 @@ def serve_sensors():
 @app.route("/sensors/<name>")
 def serve_sensor_names(name):
     sensor = proxy.sensors[name]
-    if isinstance(sensor, sensors.base.LogSensor):
+    if isinstance(sensor, sensorproxy.sensors.base.LogSensor):
         return flask.send_file(sensor.file_path, as_attachment=True, cache_timeout=0)
 
-    if isinstance(sensor, sensors.base.FileSensor):
+    if isinstance(sensor, sensorproxy.sensors.base.FileSensor):
         records = "\n".join(sensor.records)
         return flask.Response(records, mimetype='text/plain')
 
@@ -180,34 +196,16 @@ def serve_sensor_file(name, file_name):
 
     file_path = os.path.join(proxy.storage_path, file_name)
 
-    if isinstance(sensor, sensors.base.FileSensor):
+    if isinstance(sensor, sensorproxy.sensors.base.FileSensor):
         return flask.send_file(file_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0)
 
     flask.abort(404)
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description='Read, log, safe and forward sensor readings.')
-    parser.add_argument(
-        "-c", "--config", help="config file (yml)",
-        default="examples/config.yml")
-    parser.add_argument(
-        "-m", "--metering", help="metering protocol (yml)",
-        default="examples/measurements.yml")
-    parser.add_argument(
-        "-l", "--log", help="logfile", default="sensorproxy.log")
-    parser.add_argument(
-        "-p", "--port", help="bind port for web interface", default=80, type=int)
-    args = parser.parse_args()
-
-    logger = setup_logging(args.log)
-    proxy = SensorProxy(args.config, args.metering)
-
     flask_thread = threading.Thread(
         target=app.run, kwargs={"host": "0.0.0.0", "port": args.port})
     flask_thread.start()
-
     proxy.run()
 
 
