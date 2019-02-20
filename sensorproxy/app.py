@@ -8,9 +8,10 @@ import time
 import threading
 import os
 import datetime
+import http.server
+import socketserver
 
 import schedule
-import flask
 from pytimeparse import parse as parse_time
 
 import sensorproxy.sensors.base
@@ -112,7 +113,7 @@ class SensorProxy:
                 s.at_time = time
                 s.do(run_threaded, self._meter, sensor_name, params)
 
-                log.info("scheduled {}, next run: {}".format(
+                log.debug("scheduled {}, next run: {}".format(
                     sensor_name, s.next_run))
 
     def run(self):
@@ -146,66 +147,31 @@ def setup_logging(logfile_path):
     return logger
 
 
-app = flask.Flask(__name__)
-parser = argparse.ArgumentParser(
-    description='Read, log, safe and forward sensor readings.')
-parser.add_argument(
-    "-c", "--config", help="config file (yml)",
-    default="examples/config.yml")
-parser.add_argument(
-    "-m", "--metering", help="metering protocol (yml)",
-    default="examples/measurements.yml")
-parser.add_argument(
-    "-l", "--log", help="logfile", default="sensorproxy.log")
-parser.add_argument(
-    "-p", "--port", help="bind port for web interface", default=80, type=int)
-args = parser.parse_args()
-
-proxy = SensorProxy(args.config, args.metering)
-logger = setup_logging(args.log)
-
-
-@app.route("/log")
-def serve_index():
-    with open(args.log) as logfile:
-        log = logfile.read()
-        return flask.Response(log, mimetype='text/plain')
-
-
-@app.route("/sensors")
-def serve_sensors():
-    return flask.Response(",".join(proxy.sensors.keys()), mimetype='text/plain')
-
-
-@app.route("/sensors/<name>")
-def serve_sensor_names(name):
-    sensor = proxy.sensors[name]
-    if isinstance(sensor, sensorproxy.sensors.base.LogSensor):
-        return flask.send_file(sensor.file_path, as_attachment=True, cache_timeout=0)
-
-    if isinstance(sensor, sensorproxy.sensors.base.FileSensor):
-        records = "\n".join(sensor.records)
-        return flask.Response(records, mimetype='text/plain')
-
-
-@app.route("/sensors/<name>/<file_name>")
-def serve_sensor_file(name, file_name):
-    sensor = proxy.sensors[name]
-    if file_name == "latest":
-        file_name = sensor.records[-1]
-
-    file_path = os.path.join(proxy.storage_path, file_name)
-
-    if isinstance(sensor, sensorproxy.sensors.base.FileSensor):
-        return flask.send_file(file_path, as_attachment=True, attachment_filename=file_name, cache_timeout=0)
-
-    flask.abort(404)
-
-
 def main():
-    flask_thread = threading.Thread(
-        target=app.run, kwargs={"host": "0.0.0.0", "port": args.port})
-    flask_thread.start()
+    parser = argparse.ArgumentParser(
+        description='Read, log, safe and forward sensor readings.')
+    parser.add_argument(
+        "-c", "--config", help="config file (yml)",
+        default="examples/config.yml")
+    parser.add_argument(
+        "-m", "--metering", help="metering protocol (yml)",
+        default="examples/measurements.yml")
+    parser.add_argument(
+        "-l", "--log", help="logfile", default="sensorproxy.log")
+    parser.add_argument(
+        "-p", "--port", help="bind port for web interface", default=80, type=int)
+
+    args = parser.parse_args()
+    proxy = SensorProxy(args.config, args.metering)
+    os.chdir(proxy.storage_path)
+
+    logger = setup_logging(args.log)
+
+    Handler = http.server.SimpleHTTPRequestHandler
+    httpd = socketserver.TCPServer(("", args.port), Handler)
+
+    httpd_thread = threading.Thread(target=httpd.serve_forever)
+    httpd_thread.start()
     proxy.run()
 
 
