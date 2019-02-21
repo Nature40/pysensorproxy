@@ -152,10 +152,10 @@ def main():
         description='Read, log, safe and forward sensor readings.')
     parser.add_argument(
         "-c", "--config", help="config file (yml)",
-        default="examples/config.yml")
+        default="examples/sensorproxy.yml")
     parser.add_argument(
         "-m", "--metering", help="metering protocol (yml)",
-        default="examples/measurements.yml")
+        default="examples/meterings.yml")
     parser.add_argument(
         "-l", "--log", help="logfile", default="sensorproxy.log")
     parser.add_argument(
