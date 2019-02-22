@@ -14,10 +14,11 @@ import socketserver
 import schedule
 from pytimeparse import parse as parse_time
 
-import sensorproxy.sensors.base
-import sensorproxy.sensors.optical
 import sensorproxy.sensors.audio
+import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
+import sensorproxy.sensors.optical
+import sensorproxy.sensors.rsync
 from sensorproxy.wifi import WiFiManager
 from sensorproxy.lift import Lift
 
