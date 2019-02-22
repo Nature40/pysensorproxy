@@ -17,13 +17,17 @@ class Sensor:
     def record(self, *args, dry=False, **kwargs):
         pass
 
+    @staticmethod
+    def time_repr():
+        return time.strftime("%Y%m%d_%H%M%S", time.gmtime())
+
 
 class LogSensor(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.file_path = os.path.join(self.storage_path, "{}_{}.csv".format(
-            int(time.time()), self.name))
+            Sensor.time_repr(), self.name))
 
         with open(self.file_path, "a") as file:
             writer = csv.writer(file)
@@ -39,7 +43,7 @@ class LogSensor(Sensor):
         pass
 
     def record(self, *args, dry=False, **kwargs):
-        ts = time.time()
+        ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
 
         if not dry:
@@ -59,7 +63,7 @@ class FileSensor(Sensor):
     @property
     def file_path(self):
         return os.path.join(self.storage_path, "{}_{}.{}".format(
-            int(time.time()), self.name, self.file_ext))
+            Sensor.time_repr(), self.name, self.file_ext))
 
     @property
     def file_path_dry(self):
