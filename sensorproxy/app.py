@@ -81,6 +81,9 @@ class SensorProxy:
         for name, metering in self.meterings.items():
             logger.debug("Testing metering {}".format(name))
             for sensor_name, params in metering["sensors"].items():
+                if "duration" in params:
+                    params = params.copy()
+                    params["duration"] = "1s"
                 self._meter(sensor_name, params)
 
     def _meter(self, sensor_name: str, params: dict):
