@@ -1,6 +1,8 @@
 import time
 import logging
 
+from pytimeparse import parse as parse_time
+
 from .base import register_sensor, FileSensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
@@ -16,7 +18,9 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def _read(self, file_path, res_X, res_Y, adjust_time_s):
+    def _read(self, file_path, res_X, res_Y, adjust_time):
+        adjust_time_s = parse_time(adjust_time)
+
         logger.debug("Reading PiCamera with {}x{} for {}s".format(
             res_X, res_Y, adjust_time_s))
 

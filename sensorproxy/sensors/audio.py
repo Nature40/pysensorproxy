@@ -2,6 +2,8 @@ import subprocess
 import logging
 import os
 
+from pytimeparse import parse as parse_time
+
 from .base import register_sensor, FileSensor, SensorNotAvailableException, SensorConfigurationException
 
 logger = logging.getLogger(__name__)
@@ -39,8 +41,9 @@ class Microphone(FileSensor):
             raise SensorConfigurationException(
                 "amixer returned {}: {}".format(p.returncode, stderr.decode()))
 
-    def _read(self, file_path, duration_s):
+    def _read(self, file_path, duration):
         device_name = "hw:{},{}".format(self.card, self.device)
+        duration_s = parse_time(duration)
 
         cmd = [
             "arecord",
