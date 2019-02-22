@@ -35,6 +35,8 @@ class SensorProxy:
         pass
 
     def __init__(self, config_path, metering_path):
+        self.config_path = config_path
+
         logger.info("loading config file '{}'".format(config_path))
         with open(config_path) as config_file:
             config = yaml.load(config_file)
@@ -103,9 +105,12 @@ class SensorProxy:
                 self._meter(sensor_name, params)
 
     def _meter(self, sensor_name: str, params: dict):
-        sensor = self.sensors[sensor_name]
         try:
+            sensor = self.sensors[sensor_name]
             sensor.record(**params)
+        except KeyError:
+            logger.warn("Sensor {} is not defined in config: {}".format(
+                sensor_name, self.config_path))
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
             logger.warn(
                 "Sensor {} is not available: {}".format(sensor_name, e))
