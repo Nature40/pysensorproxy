@@ -8,7 +8,7 @@ log = logging.getLogger("pysensorproxy.sensors.environment")
 
 @register_sensor
 class AM2302(LogSensor):
-    def __init__(self, *args, pin=23, **kwargs):
+    def __init__(self, *args, pin, **kwargs):
         super().__init__(*args, **kwargs)
 
         global Adafruit_DHT

@@ -9,21 +9,20 @@ log = logging.getLogger("pysensorproxy.sensors.audio")
 
 @register_sensor
 class Microphone(FileSensor):
-    def __init__(self, *args, device_name="hw:1,0", file_type="wav",
-                 format="S16_LE", rate=44100, **kwargs):
+    def __init__(self, *args, device_name, file_type, sample_format, **kwargs):
         super().__init__(file_type, *args, **kwargs)
 
         self.device_name = device_name
         self.file_type = file_type
-        self.format = format
+        self.sample_format = sample_format
         self.rate = rate
 
-    def _read(self, file_path, duration_s=1):
+    def _read(self, file_path, duration_s):
         cmd = [
             "arecord",
             "-D", self.device_name,
             "-t", self.file_type,
-            "-f", self.format,
+            "-f", self.sample_format,
             "-r", str(self.rate),
             "-d", str(duration_s),
             file_path]

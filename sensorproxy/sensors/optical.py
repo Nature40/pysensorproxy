@@ -8,7 +8,7 @@ log = logging.getLogger("pysensorproxy.sensors.optical")
 
 @register_sensor
 class PiCamera(FileSensor):
-    def __init__(self, *args, img_format="jpeg", **kwargs):
+    def __init__(self, *args, img_format, **kwargs):
         super().__init__(img_format, *args, **kwargs)
 
         global picamera
@@ -16,7 +16,7 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def _read(self, file_path, res_X=3280, res_Y=2464, adjust_time_s=2):
+    def _read(self, file_path, res_X, res_Y, adjust_time_s):
         log.debug("Reading PiCamera with {}x{} for {}s".format(
             res_X, res_Y, adjust_time_s))
 
