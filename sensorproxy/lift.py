@@ -6,7 +6,7 @@ import RPi.GPIO as gpio
 
 from sensorproxy.wifi import WiFi, WiFiManager
 
-log = logging.getLogger("pysensorproxy.lift")
+logger = logging.getLogger(__name__)
 
 
 class Lift:
@@ -32,16 +32,16 @@ class Lift:
         return "Lift {}".format(self.wifi.ssid)
 
     def connect(self):
-        log.info("connecting to '{}'".format(self.wifi.ssid))
+        logger.info("connecting to '{}'".format(self.wifi.ssid))
         self.mgr.connect(self.wifi)
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(3)
         self._send_speed(0)
-        log.info("connection to '{}' established".format(self.wifi.ssid))
+        logger.info("connection to '{}' established".format(self.wifi.ssid))
 
     def disconnect(self):
-        log.info("disconnecting from lift")
+        logger.info("disconnecting from lift")
         self.sock.close()
         self.sock = None
         self.mgr.disconnect()
@@ -63,12 +63,12 @@ class Lift:
 
         self._check_limits(speed)
 
-        log.debug("sending speed {}".format(speed))
+        logger.debug("sending speed {}".format(speed))
         request = str(speed).encode()
         self.sock.sendto(request, (self.ip, self.port))
 
         response = self.sock.recvfrom(1024)[0].decode()
-        log.debug("received '{}'".format(response.strip()))
+        logger.debug("received '{}'".format(response.strip()))
 
         cmd, speed_response_str = response.split()
         speed_response = int(speed_response_str)
@@ -77,15 +77,15 @@ class Lift:
             raise Exception(
                 "LiftControl responded with command '{}'".format(cmd))
         elif speed != speed_response:
-            log.warn("responded speed ({}) does not match requested ({})".format(
+            logger.warn("responded speed ({}) does not match requested ({})".format(
                 speed_response, speed))
         else:
-            log.debug("speed set successfully")
+            logger.debug("speed set successfully")
 
         return speed_response
 
     def move(self, speed: int):
-        log.info("moving lift with speed {}".format(speed))
+        logger.info("moving lift with speed {}".format(speed))
         ride_start_ts = time.time()
 
         try:
@@ -95,22 +95,22 @@ class Lift:
         except Lift.MovingException:
             ride_end_ts = time.time()
             travel_time_s = ride_end_ts - ride_start_ts
-            log.info("end reached in {}s".format(travel_time_s))
+            logger.info("end reached in {}s".format(travel_time_s))
 
             self._send_speed(0)
 
         return travel_time_s
 
     def calibrate(self):
-        log.info("calibrating lift, starting at the bottom")
+        logger.info("calibrating lift, starting at the bottom")
         self.move(-255)
 
-        log.info("moving lift to top")
+        logger.info("moving lift to top")
         self.time_up_s = self.move(255)
-        log.info("goint back to bottom")
+        logger.info("goint back to bottom")
         self.time_down_s = self.move(-255)
 
-        log.info("calibration finished, {}s to the top, {}s back to bottom".format(
+        logger.info("calibration finished, {}s to the top, {}s back to bottom".format(
             self.time_up_s, self.time_down_s))
 
 

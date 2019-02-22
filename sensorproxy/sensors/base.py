@@ -2,9 +2,12 @@ import os
 import time
 import uuid
 import csv
+import logging
 
 from abc import ABC, abstractmethod
 from typing import Type
+
+logger = logging.getLogger(__name__)
 
 
 class Sensor:
@@ -94,4 +97,8 @@ def register_sensor(cls: Type[Sensor]):
 
 
 class SensorNotAvailableException(Exception):
+    pass
+
+
+class SensorConfigurationException(Exception):
     pass

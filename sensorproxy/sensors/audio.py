@@ -2,9 +2,9 @@ import subprocess
 import logging
 import os
 
-from .base import register_sensor, FileSensor, SensorNotAvailableException
+from .base import register_sensor, FileSensor, SensorNotAvailableException, SensorConfigurationException
 
-log = logging.getLogger("pysensorproxy.sensors.audio")
+logger = logging.getLogger(__name__)
 
 
 @register_sensor
@@ -27,7 +27,7 @@ class Microphone(FileSensor):
             "-d", str(duration_s),
             file_path]
 
-        log.debug("Recording audio: {}".format(" ".join(cmd)))
+        logger.debug("Recording audio: {}".format(" ".join(cmd)))
 
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -38,4 +38,4 @@ class Microphone(FileSensor):
             raise SensorNotAvailableException(
                 "arecord returned {}: {}".format(p.returncode, stderr.decode()))
 
-        log.info("audio file written to '{}'".format(file_path))
+        logger.info("audio file written to '{}'".format(file_path))

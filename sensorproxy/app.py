@@ -21,7 +21,7 @@ import sensorproxy.sensors.environment
 from sensorproxy.wifi import WiFiManager
 from sensorproxy.lift import Lift
 
-log = logging.getLogger("pysensorproxy")
+logger = logging.getLogger(__name__)
 
 
 def run_threaded(job_func, *args):
@@ -34,7 +34,7 @@ class SensorProxy:
         pass
 
     def __init__(self, config_path, metering_path):
-        log.info("loading config file '{}'".format(config_path))
+        logger.info("loading config file '{}'".format(config_path))
         with open(config_path) as config_file:
             config = yaml.load(config_file)
 
@@ -47,7 +47,7 @@ class SensorProxy:
         else:
             self.storage_path = ''
 
-        log.info("using storage at '{}'".format(self.storage_path))
+        logger.info("using storage at '{}'".format(self.storage_path))
 
         self.sensors = {}
         for name, params in config["sensors"].items():
@@ -55,7 +55,7 @@ class SensorProxy:
             sensor = sensor_cls(name, self.storage_path, **params)
             self.sensors[name] = sensor
 
-            log.info("added sensor {} ({})".format(name, params["type"]))
+            logger.info("added sensor {} ({})".format(name, params["type"]))
 
         self.wifi_mgr = WiFiManager(**config["wifi"])
 
@@ -64,7 +64,7 @@ class SensorProxy:
         else:
             self.lift = None
 
-        log.info("loading metering file '{}'".format(metering_path))
+        logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
             self.meterings = yaml.load(metering_file)
 
@@ -73,13 +73,13 @@ class SensorProxy:
 
     def _test_lift(self):
         if self.lift:
-            log.debug("testing lift connection")
+            logger.debug("testing lift connection")
             self.lift.connect()
             self.lift.disconnect()
 
     def _test_metering(self):
         for name, metering in self.meterings.items():
-            log.debug("Testing metering {}".format(name))
+            logger.debug("Testing metering {}".format(name))
             for sensor_name, params in metering["sensors"].items():
                 self._meter(sensor_name, params)
 
@@ -88,7 +88,8 @@ class SensorProxy:
         try:
             sensor.record(**params)
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
-            log.warn("Sensor {} is not available: {}".format(sensor_name, e))
+            logger.warn(
+                "Sensor {} is not available: {}".format(sensor_name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
         start = 0
@@ -100,7 +101,7 @@ class SensorProxy:
         if "end" in metering["schedule"]:
             end = parse_time(metering["schedule"]["end"])
 
-        log.info("metering {} from {} until {}, every {}".format(
+        logger.info("metering {} from {} until {}, every {}".format(
             name, start, end, interval))
 
         for sensor_name, params in metering["sensors"].items():
@@ -113,7 +114,7 @@ class SensorProxy:
                 s.at_time = time
                 s.do(run_threaded, self._meter, sensor_name, params)
 
-                log.debug("scheduled {}, next run: {}".format(
+                logger.debug("scheduled {}, next run: {}".format(
                     sensor_name, s.next_run))
 
     def run(self):
@@ -125,26 +126,29 @@ class SensorProxy:
             time.sleep(1)
 
 
-def setup_logging(logfile_path):
+def setup_logging(logfile_path, level):
     try:
         os.remove(logfile_path)
     except FileNotFoundError:
         pass
 
-    logger = logging.getLogger("pysensorproxy")
-    logger.setLevel(logging.INFO)
+    logger = logging.getLogger("sensorproxy")
+
+    # create stderr log
+    stderr_formatter = logging.Formatter(
+        '%(name)s - %(levelname)s - %(message)s')
     stderr_handler = logging.StreamHandler()
-    logfile_handler = logging.FileHandler(logfile_path)
-
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    stderr_handler.setFormatter(formatter)
-    logfile_handler.setFormatter(formatter)
-
+    stderr_handler.setFormatter(stderr_formatter)
     logger.addHandler(stderr_handler)
+
+    # create logfile
+    logfile_formatter = logging.Formatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logfile_handler = logging.FileHandler(logfile_path)
+    logfile_handler.setFormatter(logfile_formatter)
     logger.addHandler(logfile_handler)
 
-    return logger
+    logger.setLevel(level)
 
 
 def main():
@@ -160,12 +164,15 @@ def main():
         "-l", "--log", help="logfile", default="sensorproxy.log")
     parser.add_argument(
         "-p", "--port", help="bind port for web interface", default=80, type=int)
+    parser.add_argument(
+        "-v", "--verbose", help="enable verbose log", action='store_const', const=logging.DEBUG, default=logging.INFO)
 
     args = parser.parse_args()
+
+    setup_logging(args.log, args.verbose)
+
     proxy = SensorProxy(args.config, args.metering)
     os.chdir(proxy.storage_path)
-
-    logger = setup_logging(args.log)
 
     Handler = http.server.SimpleHTTPRequestHandler
     httpd = socketserver.TCPServer(("", args.port), Handler)

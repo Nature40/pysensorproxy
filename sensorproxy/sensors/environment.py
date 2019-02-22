@@ -3,7 +3,7 @@ import logging
 
 from .base import register_sensor, LogSensor, SensorNotAvailableException
 
-log = logging.getLogger("pysensorproxy.sensors.environment")
+logger = logging.getLogger(__name__)
 
 
 @register_sensor
@@ -21,7 +21,7 @@ class AM2302(LogSensor):
         return ["temp", "humid"]
 
     def _read(self):
-        log.debug("Reading AM2302 sensor on pin {}".format(self.pin))
+        logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
             humid, temp = Adafruit_DHT.read_retry(
@@ -35,7 +35,7 @@ class AM2302(LogSensor):
 
         humid = round(humid, 3)
         temp = round(temp, 3)
-        log.info("Read {}°C, {}% humidity".format(temp, humid))
+        logger.info("Read {}°C, {}% humidity".format(temp, humid))
 
         return [temp, humid]
 
@@ -70,6 +70,6 @@ class TSL2561(LogSensor):
         except OSError as e:
             raise SensorNotAvailableException(e)
 
-        log.info("Read {} lux (br: {}, ir: {})".format(lux, broadband, ir))
+        logger.info("Read {} lux (br: {}, ir: {})".format(lux, broadband, ir))
 
         return [lux, broadband, ir]

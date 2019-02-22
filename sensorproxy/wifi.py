@@ -4,7 +4,7 @@ import base64
 import logging
 import signal
 
-logger = logging.getLogger("pysensorproxy.wifi")
+logger = logging.getLogger(__name__)
 
 
 class WiFi:

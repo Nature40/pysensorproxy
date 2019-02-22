@@ -1,8 +1,11 @@
 import time
 import os
 import random
+import logging
 
 from .base import register_sensor, LogSensor, FileSensor
+
+logger = logging.getLogger(__name__)
 
 
 @register_sensor
