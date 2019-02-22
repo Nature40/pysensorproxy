@@ -9,18 +9,42 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class Microphone(FileSensor):
-    def __init__(self, *args, device_name, file_type, sample_format, **kwargs):
+    def __init__(self, *args, card, device, file_type, sample_format, rate, level, **kwargs):
         super().__init__(file_type, *args, **kwargs)
 
-        self.device_name = device_name
+        self.card = card
+        self.device = device
         self.file_type = file_type
         self.sample_format = sample_format
         self.rate = rate
 
+        self._set_volume(level)
+
+    def _set_volume(self, level):
+        cmd = [
+            "amixer",
+            "-c", str(self.card),
+            "sset",
+            "Mic",
+            str(level)]
+
+        logger.debug("Setting microphone level: {}".format(" ".join(cmd)))
+
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
+        p.wait()
+        stderr = p.stderr.read()
+
+        if p.returncode != 0:
+            raise SensorConfigurationException(
+                "amixer returned {}: {}".format(p.returncode, stderr.decode()))
+
     def _read(self, file_path, duration_s):
+        device_name = "hw:{},{}".format(self.card, self.device)
+
         cmd = [
             "arecord",
-            "-D", self.device_name,
+            "-D", device_name,
             "-t", self.file_type,
             "-f", self.sample_format,
             "-r", str(self.rate),
