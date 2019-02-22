@@ -20,7 +20,11 @@ class Microphone(FileSensor):
         self.sample_format = sample_format
         self.rate = rate
 
-        self._set_volume(level)
+        try:
+            self._set_volume(level)
+        except SensorConfigurationException as e:
+            logger.warn(
+                "Microphone configuration error (continuing): {}".format(e))
 
     def _set_volume(self, level):
         cmd = [
