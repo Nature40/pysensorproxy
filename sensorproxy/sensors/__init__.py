@@ -1,1 +1,8 @@
-__all__ = ["base", "random", "environment", "optical", "audio"]
+__all__ = [
+        "audio",
+        "base",
+        "environment",
+        "optical",
+        "random",
+        "rsync"
+        ]
