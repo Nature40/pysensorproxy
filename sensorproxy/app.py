@@ -49,6 +49,8 @@ class SensorProxy:
 
         logger.info("using storage at '{}'".format(self.storage_path))
 
+        self._init_logging()
+
         self.sensors = {}
         for name, params in config["sensors"].items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
@@ -70,6 +72,19 @@ class SensorProxy:
 
         self._test_metering()
         # self._test_lift()
+
+    def _init_logging(self, file_name="sensorproxy.log"):
+        logfile_path = os.path.join(self.storage_path, file_name)
+
+        # create logfile
+        logfile_formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        logfile_handler = logging.FileHandler(logfile_path)
+        logfile_handler.setFormatter(logfile_formatter)
+
+        main_logger = logging.getLogger("sensorproxy")
+        main_logger.addHandler(logfile_handler)
+        main_logger.setLevel(logging.INFO)
 
     def _test_lift(self):
         if self.lift:
@@ -129,29 +144,16 @@ class SensorProxy:
             time.sleep(1)
 
 
-def setup_logging(logfile_path, level):
-    try:
-        os.remove(logfile_path)
-    except FileNotFoundError:
-        pass
-
-    logger = logging.getLogger("sensorproxy")
-
+def setup_logging(level):
     # create stderr log
     stderr_formatter = logging.Formatter(
         '%(name)s - %(levelname)s - %(message)s')
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(stderr_formatter)
-    logger.addHandler(stderr_handler)
 
-    # create logfile
-    logfile_formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    logfile_handler = logging.FileHandler(logfile_path)
-    logfile_handler.setFormatter(logfile_formatter)
-    logger.addHandler(logfile_handler)
-
-    logger.setLevel(level)
+    main_logger = logging.getLogger("sensorproxy")
+    main_logger.addHandler(stderr_handler)
+    main_logger.setLevel(level)
 
 
 def main():
@@ -164,15 +166,11 @@ def main():
         "-m", "--metering", help="metering protocol (yml)",
         default="examples/meterings.yml")
     parser.add_argument(
-        "-l", "--log", help="logfile", default="sensorproxy.log")
-    parser.add_argument(
         "-p", "--port", help="bind port for web interface", default=80, type=int)
     parser.add_argument(
-        "-v", "--verbose", help="enable verbose log", action='store_const', const=logging.DEBUG, default=logging.INFO)
+        "-v", "--verbose", help="verbose output", action='store_const', const=logging.DEBUG, default=logging.INFO)
 
     args = parser.parse_args()
-
-    setup_logging(args.log, args.verbose)
 
     proxy = SensorProxy(args.config, args.metering)
     os.chdir(proxy.storage_path)
