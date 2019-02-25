@@ -78,6 +78,7 @@ class SensorProxy:
 
     def _init_logging(self, file_name="sensorproxy.log"):
         logfile_path = os.path.join(self.storage_path, file_name)
+        logger.info("Writing logs to '{}'".format(logfile_path))
 
         # create logfile
         logfile_formatter = logging.Formatter(
@@ -87,7 +88,6 @@ class SensorProxy:
 
         main_logger = logging.getLogger("sensorproxy")
         main_logger.addHandler(logfile_handler)
-        main_logger.setLevel(logging.INFO)
 
     def _test_lift(self):
         if self.lift:
