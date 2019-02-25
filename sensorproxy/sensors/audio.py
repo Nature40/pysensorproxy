@@ -11,12 +11,11 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class Microphone(FileSensor):
-    def __init__(self, *args, card, device, file_type, sample_format, rate, level, **kwargs):
-        super().__init__(file_type, *args, **kwargs)
+    def __init__(self, *args, card, device, sample_format, rate, level, **kwargs):
+        super().__init__("flac", *args, **kwargs)
 
         self.card = card
         self.device = device
-        self.file_type = file_type
         self.sample_format = sample_format
         self.rate = rate
 
@@ -49,24 +48,22 @@ class Microphone(FileSensor):
         device_name = "hw:{},{}".format(self.card, self.device)
         duration_s = parse_time(duration)
 
-        cmd = [
-            "arecord",
-            "-D", device_name,
-            "-t", self.file_type,
-            "-f", self.sample_format,
-            "-r", str(self.rate),
-            "-d", str(duration_s),
-            file_path]
+        cmd = "arecord -q -D {device_name} -t wav -f {sample_format} -r {rate} -d {duration_s} | flac - -r --best -s -o {file_path}".format(
+                device_name=device_name,
+                sample_format=self.sample_format,
+                rate=self.rate,
+                duration_s=duration_s,
+                file_path=file_path)
 
-        logger.debug("Recording audio: {}".format(" ".join(cmd)))
+        logger.debug("Recording audio: {}".format(cmd))
 
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, shell=True,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
-        stderr = p.stderr.read()
+        err_msg = p.communicate()[0]
 
         if p.returncode != 0:
             raise SensorNotAvailableException(
-                "arecord returned {}: {}".format(p.returncode, stderr.decode()))
+                    "arecord returned {}: {}".format(p.returncode, err_msg))
 
         logger.info("audio file written to '{}'".format(file_path))
