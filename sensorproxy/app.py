@@ -177,6 +177,7 @@ def main():
         "-v", "--verbose", help="verbose output", action='store_const', const=logging.DEBUG, default=logging.INFO)
 
     args = parser.parse_args()
+    setup_logging(args.verbose)
 
     proxy = SensorProxy(args.config, args.metering)
     os.chdir(proxy.storage_path)
