@@ -57,7 +57,7 @@ class SensorProxy:
         self.sensors = {}
         for name, params in config["sensors"].items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
-            sensor = sensor_cls(name, self.storage_path, **params)
+            sensor = sensor_cls(name, self.storage_path, self, **params)
             self.sensors[name] = sensor
 
             logger.info("added sensor {} ({})".format(name, params["type"]))

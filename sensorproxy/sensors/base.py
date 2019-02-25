@@ -11,13 +11,18 @@ logger = logging.getLogger(__name__)
 
 
 class Sensor:
-    def __init__(self, name, storage_path, **kwargs):
+    def __init__(self, name, storage_path, proxy, **kwargs):
         self.name = name
         self.storage_path = storage_path
+        self.proxy = proxy
         super().__init__()
 
     @abstractmethod
     def record(self, *args, dry=False, **kwargs):
+        pass
+
+    @abstractmethod
+    def refresh(self):
         pass
 
     @staticmethod
@@ -28,13 +33,7 @@ class Sensor:
 class LogSensor(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        self.file_path = os.path.join(self.storage_path, "{}_{}.csv".format(
-            Sensor.time_repr(), self.name))
-
-        with open(self.file_path, "a") as file:
-            writer = csv.writer(file)
-            writer.writerow(["ts"] + self._header)
+        self.refresh()
 
     @abstractmethod
     def _read(self, *args, **kwargs):
@@ -55,6 +54,14 @@ class LogSensor(Sensor):
                 writer.writerow([ts] + reading)
 
         return self.file_path
+
+    def refresh(self):
+        self.file_path = os.path.join(self.storage_path, "{}_{}.csv".format(
+            Sensor.time_repr(), self.name))
+
+        with open(self.file_path, "a") as file:
+            writer = csv.writer(file)
+            writer.writerow(["ts"] + self._header)
 
 
 class FileSensor(Sensor):
@@ -90,6 +97,11 @@ class FileSensor(Sensor):
 
         self.records.append(os.path.split(file_path)[1])
         return file_path
+
+    def refresh(self):
+        # FileSensor's file_path is a property method and is changed for each
+        # record call. Nothing needs to be done here.
+        pass
 
 
 classes = {}

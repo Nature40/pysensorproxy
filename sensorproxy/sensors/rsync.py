@@ -36,3 +36,9 @@ class Rsync(Sensor):
         if p.returncode != 0:
             raise SensorNotAvailableException(
                 "rsync returned {}: {}".format(p.returncode, stderr.decode()))
+
+        for _, sensor in self.proxy.sensors.items():
+            sensor.refresh()
+
+    def refresh(self):
+        pass
