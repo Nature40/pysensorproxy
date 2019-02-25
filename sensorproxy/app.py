@@ -175,12 +175,18 @@ def main():
         "-p", "--port", help="bind port for web interface", default=80, type=int)
     parser.add_argument(
         "-v", "--verbose", help="verbose output", action='store_const', const=logging.DEBUG, default=logging.INFO)
+    parser.add_argument(
+        "-t", "--test", help="only test if sensors are working", action='store_const', const=True, default=False)
 
     args = parser.parse_args()
     setup_logging(args.verbose)
 
     proxy = SensorProxy(args.config, args.metering)
     os.chdir(proxy.storage_path)
+
+    if args.test:
+        logger.info("Test finished")
+        return
 
     Handler = http.server.SimpleHTTPRequestHandler
     httpd = socketserver.TCPServer(("", args.port), Handler)
