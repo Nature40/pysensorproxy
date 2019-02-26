@@ -91,7 +91,7 @@ if __name__ == "__main__":
     handler = logging.StreamHandler()
     logger.addHandler(handler)
 
-    wifi = WiFi("LiftSystem 949f", "supersicher")
+    wifi = WiFi("nature40.liftsystem.34a4", "supersicher")
 
     mgr = WiFiManager()
     mgr.connect(wifi)
