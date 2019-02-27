@@ -167,10 +167,10 @@ def main():
         description='Read, log, safe and forward sensor readings.')
     parser.add_argument(
         "-c", "--config", help="config file (yml)",
-        default="examples/sensorproxy.yml")
+        default="/boot/sensorproxy.yml")
     parser.add_argument(
         "-m", "--metering", help="metering protocol (yml)",
-        default="examples/meterings.yml")
+        default="/boot/meterings.yml")
     parser.add_argument(
         "-p", "--port", help="bind port for web interface", default=80, type=int)
     parser.add_argument(
