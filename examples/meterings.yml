@@ -13,7 +13,7 @@ morning:              # name of the measuring cycle
 
 ongoing:
   sensors:
-    am2302: {}            # empty config (no parameters possible here)
+    am2302: {}              # empty config (no parameters possible here)
     lumen: {}
   schedule:
     interval: 5m
