@@ -15,7 +15,7 @@ AUDIO_FORMATS = ["wav", "flac"]
 class Microphone(FileSensor):
     def __init__(self, *args, audio_format, card, device, sample_format, rate, level, **kwargs):
         if audio_format not in AUDIO_FORMATS:
-            logger.warn("Microphone sample format '{}' is not available, defaulting to 'wav'.".format(
+            logger.error("Microphone sample format '{}' is not available, defaulting to 'wav'.".format(
                 self.file_ext))
             audio_format = 'wav'
 
@@ -30,7 +30,7 @@ class Microphone(FileSensor):
         try:
             self._set_volume(level)
         except SensorConfigurationException as e:
-            logger.warn(
+            logger.error(
                 "Microphone configuration error (continuing): {}".format(e))
 
     def _set_volume(self, level):

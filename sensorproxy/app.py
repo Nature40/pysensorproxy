@@ -109,11 +109,11 @@ class SensorProxy:
             sensor = self.sensors[sensor_name]
             sensor.record(**params)
         except KeyError:
-            logger.warn("Sensor '{}' is not defined in config: '{}'".format(
+            logger.error("Sensor '{}' is not defined in config: {}".format(
                 sensor_name, self.config_path))
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
-            logger.warn(
-                "Sensor '{}' is not available: '{}'".format(sensor_name, e))
+            logger.error(
+                "Sensor '{}' is not available: {}".format(sensor_name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
         start = 0
@@ -151,6 +151,11 @@ class SensorProxy:
 
 
 def setup_logging(level):
+    if level > 3:
+        logging_level = logging.DEBUG
+    else:
+        logging_level = logging.ERROR - (10 * level)
+
     # create stderr log
     stderr_formatter = logging.Formatter(
         '%(name)s - %(levelname)s - %(message)s')
@@ -161,26 +166,26 @@ def setup_logging(level):
     main_logger.addHandler(stderr_handler)
     main_logger.setLevel(level)
 
+    if level > 3:
+        logger.warn("Logging level cannot be increased further.")
+
 
 def main():
     parser = argparse.ArgumentParser(
         description='Read, log, safe and forward sensor readings.')
     parser.add_argument(
-        "-c", "--config", help="config file (yml)",
-        default="/boot/sensorproxy.yml")
+        "-c", "--config", help="config file (yml)", default="/boot/sensorproxy.yml")
     parser.add_argument(
-        "-m", "--metering", help="metering protocol (yml)",
-        default="/boot/meterings.yml")
+        "-m", "--metering", help="metering protocol (yml)", default="/boot/meterings.yml")
     parser.add_argument(
         "-p", "--port", help="bind port for web interface", default=80, type=int)
     parser.add_argument(
-        "-v", "--verbose", help="verbose output", action='store_const', const=logging.DEBUG, default=logging.INFO)
+        '-v', '--verbose', help="verbose output", action='count', default=0)
     parser.add_argument(
         "-t", "--test", help="only test if sensors are working", action='store_const', const=True, default=False)
-
     args = parser.parse_args()
-    setup_logging(args.verbose)
 
+    setup_logging(args.verbose)
     proxy = SensorProxy(args.config, args.metering)
 
     if args.test:
