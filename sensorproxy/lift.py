@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Lift:
-    def __init__(self, mgr: WiFiManager, ssid="LiftSystem 949f", psk="supersicher", ip="192.168.4.1", port=35037, hall_bottom=5, hall_top=6, update_interval_s=0.1):
+    def __init__(self, mgr: WiFiManager, ssid="nature40.liftsystem.34c4", psk="supersicher", ip="192.168.4.254", port=35037, hall_bottom=5, hall_top=6, update_interval_s=0.1):
         self.mgr = mgr
         self.ip = ip
         self.port = port
@@ -32,8 +32,11 @@ class Lift:
         return "Lift {}".format(self.wifi.ssid)
 
     def connect(self):
-        logger.info("connecting to '{}'".format(self.wifi.ssid))
-        self.mgr.connect(self.wifi)
+        if self.mgr:
+            logger.info("connecting to '{}'".format(self.wifi.ssid))
+            self.mgr.connect(self.wifi)
+        else:
+            logger.info("wifi is handled externally")
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(3)
@@ -44,7 +47,9 @@ class Lift:
         logger.info("disconnecting from lift")
         self.sock.close()
         self.sock = None
-        self.mgr.disconnect()
+
+        if self.mgr:
+            self.mgr.disconnect()
 
     class MovingException(Exception):
         pass
@@ -123,9 +128,7 @@ if __name__ == "__main__":
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    mgr = WiFiManager()
-
-    lift = Lift(mgr)
+    lift = Lift(mgr=None)
     lift.connect()
 
     lift.calibrate()
