@@ -14,19 +14,15 @@ sensors:                  # list of sensors
     audio_format: wav
   cam:
     type: PiCamera
-    img_format: "jpeg"
-  rsync:
-    type: Rsync
-    destination: /tmp/sink  # rsync remote string
-    remove_source_files: True  # delete copied files
+    img_format: jpeg
 
-storage: '/pysensorproxy' # path to save files
+storage: /pysensorproxy   # path to save files
 wifi:                     # wifi properties to be configured
-  interface: "wlan0"        # the interface to be managed
+  interface: wlan0          # the interface to be managed
 
 lift:                     # lift configuration
-  ssid: 'nature40.liftsystem.34a4'
-  psk: 'supersicher'
+  ssid: nature40.liftsystem.34a4
+  psk: supersicher
   hall_bottom: 5
   hall_top: 6
   ip: 192.168.4.254
