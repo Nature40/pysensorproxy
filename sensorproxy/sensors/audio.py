@@ -8,16 +8,24 @@ from .base import register_sensor, FileSensor, SensorNotAvailableException, Sens
 
 logger = logging.getLogger(__name__)
 
+AUDIO_FORMATS = ["wav", "flac"]
+
 
 @register_sensor
 class Microphone(FileSensor):
-    def __init__(self, *args, card, device, sample_format, rate, level, **kwargs):
-        super().__init__("flac", *args, **kwargs)
+    def __init__(self, *args, audio_format, card, device, sample_format, rate, level, **kwargs):
+        if audio_format not in AUDIO_FORMATS:
+            logger.warn("Microphone sample format '{}' is not available, defaulting to 'wav'.".format(
+                self.file_ext))
+            audio_format = 'wav'
+
+        super().__init__(audio_format, *args, **kwargs)
 
         self.card = card
         self.device = device
         self.sample_format = sample_format
         self.rate = rate
+        self.audio_format = audio_format
 
         try:
             self._set_volume(level)
@@ -48,22 +56,30 @@ class Microphone(FileSensor):
         device_name = "hw:{},{}".format(self.card, self.device)
         duration_s = parse_time(duration)
 
-        cmd = "arecord -q -D {device_name} -t wav -f {sample_format} -r {rate} -d {duration_s} | flac - -r --best -s -o {file_path}".format(
-                device_name=device_name,
-                sample_format=self.sample_format,
-                rate=self.rate,
-                duration_s=duration_s,
-                file_path=file_path)
+        if self.file_ext == "wav":
+            save_cmd = "{file_path}".format(
+                file_path=self.file_path)
+        elif self.file_ext == "flac":
+            save_cmd = "| flac - -s -o {file_path}".format(
+                file_path=self.file_path)
+
+        cmd = "arecord -q -D {device_name} -t wav -f {sample_format} -r {rate} -d {duration_s} {save_cmd}".format(
+            device_name=device_name,
+            sample_format=self.sample_format,
+            rate=self.rate,
+            duration_s=duration_s,
+            file_path=file_path,
+            save_cmd=save_cmd)
 
         logger.debug("Recording audio: {}".format(cmd))
 
-        p = subprocess.Popen(cmd, shell=True,
-                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         p.wait()
         err_msg = p.communicate()[0]
 
         if p.returncode != 0:
             raise SensorNotAvailableException(
-                    "arecord returned {}: {}".format(p.returncode, err_msg))
+                "arecord returned {}: {}".format(p.returncode, err_msg))
 
         logger.info("audio file written to '{}'".format(file_path))

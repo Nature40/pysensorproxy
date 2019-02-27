@@ -11,6 +11,7 @@ sensors:                  # list of sensors
     sample_format: S16_LE
     rate: 44100
     level: 100%
+    audio_format: wav
   cam:
     type: PiCamera
     img_format: "jpeg"
