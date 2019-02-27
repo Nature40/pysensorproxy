@@ -34,5 +34,7 @@ class PiCamera(FileSensor):
                 camera.stop_preview()
         except picamera.exc.PiCameraMMALError as e:
             raise SensorNotAvailableException(e)
+        except picamera.exc.PiCameraError as e:
+            raise SensorNotAvailableException(e)
 
         logger.info("image file written to '{}'".format(file_path))
