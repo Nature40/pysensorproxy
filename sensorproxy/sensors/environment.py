@@ -58,6 +58,8 @@ class TSL2561(LogSensor):
         return ["lux", "broadband", "ir"]
 
     def _read(self):
+        logger.debug("Reading TSL2561 sensor via i2c")
+
         if self.tsl2561 == None:
             try:
                 self.tsl2561 = tsl2561.TSL2561()
