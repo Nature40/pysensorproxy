@@ -1,6 +1,6 @@
-import socket
 import time
 import logging
+import subprocess
 
 import RPi.GPIO as gpio
 
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Lift:
-    def __init__(self, mgr: WiFiManager, ssid="nature40.liftsystem.34c4", psk="supersicher", ip="192.168.4.254", port=35037, hall_bottom=5, hall_top=6, update_interval_s=0.1):
+    def __init__(self, mgr: WiFiManager, ssid="nature40.liftsystem.949f", psk="supersicher", ip="192.168.4.254", port=35037, hall_bottom=5, hall_top=6, update_interval_s=0.1):
         self.mgr = mgr
         self.ip = ip
         self.port = port
@@ -19,7 +19,7 @@ class Lift:
         self.update_interval_s = update_interval_s
 
         self.wifi = WiFi(ssid, psk)
-        self.sock = None
+        self.nc = None
 
         self.time_up_s = None
         self.time_down_s = None
@@ -38,16 +38,18 @@ class Lift:
         else:
             logger.info("wifi is handled externally")
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.connect((self.ip, self.port))
+        cmd = ["nc", self.ip, str(self.port)]
+        logger.debug("starting session: {}".format(" ".join(cmd)))
+        self.nc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
     def disconnect(self):
         logger.info("disconnecting from lift")
-        self.sock.close()
-        self.sock = None
+        self.nc.kill()
+        self.nc = None
 
         if self.mgr:
             self.mgr.disconnect()
@@ -64,16 +66,17 @@ class Lift:
                 "cannot move downwards, reached sensor.")
 
     def _send_speed(self, speed: int):
-        if not self.sock:
+        if not self.nc:
             raise Exception("not connected to a lift")
 
         self._check_limits(speed)
 
         logger.debug("sending speed {}".format(speed))
-        request = str(speed).encode()
-        self.sock.send(request)
+        request = "{}\n".format(speed).encode()
+        self.nc.stdin.write(request)
+        self.nc.stdin.flush()
 
-        response = self.sock.recv(1024).decode()
+        response = self.nc.stdout.readline().decode()
         logger.debug("received '{}'".format(response.strip()))
 
         cmd, speed_response_str = response.split()
