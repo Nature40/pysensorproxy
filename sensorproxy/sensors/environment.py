@@ -24,8 +24,7 @@ class AM2302(LogSensor):
         logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
-            humid, temp = Adafruit_DHT.read_retry(
-                Adafruit_DHT.AM2302, self.pin)
+            humid, temp = Adafruit_DHT.read(Adafruit_DHT.AM2302, self.pin)
         except RuntimeError as e:
             raise SensorNotAvailableException(e)
 
