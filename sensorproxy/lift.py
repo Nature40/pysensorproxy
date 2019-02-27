@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class Lift:
-    def __init__(self, mgr: WiFiManager, ssid="nature40.liftsystem.949f", psk="supersicher", ip="192.168.4.254", port=35037, hall_bottom=5, hall_top=6, update_interval_s=0.1):
+    def __init__(self, mgr, ssid, psk, hall_bottom, hall_top, ip="192.168.4.254", port=35037, update_interval_s=0.1):
         self.mgr = mgr
         self.ip = ip
         self.port = port
@@ -132,7 +132,18 @@ if __name__ == "__main__":
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
-    lift = Lift(mgr=None)
+    mgr = None
+    mgr = WiFiManager()
+
+    lift = Lift(
+        mgr=mgr,
+        ssid="nature40.liftsystem.949f",
+        psk="supersicher",
+        ip="192.168.4.254",
+        port=35037,
+        hall_bottom=5,
+        hall_top=6,
+        update_interval_s=0.1)
     lift.connect()
 
     lift.calibrate()

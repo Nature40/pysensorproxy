@@ -25,5 +25,3 @@ lift:                     # lift configuration
   psk: supersicher
   hall_bottom: 5
   hall_top: 6
-  ip: 192.168.4.254
-  port: 35037
