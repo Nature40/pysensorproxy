@@ -38,8 +38,9 @@ class Lift:
         else:
             logger.info("wifi is handled externally")
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(3)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.connect((self.ip, self.port))
+
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
@@ -70,9 +71,9 @@ class Lift:
 
         logger.debug("sending speed {}".format(speed))
         request = str(speed).encode()
-        self.sock.sendto(request, (self.ip, self.port))
+        self.sock.send(request)
 
-        response = self.sock.recvfrom(1024)[0].decode()
+        response = self.sock.recv(1024).decode()
         logger.debug("received '{}'".format(response.strip()))
 
         cmd, speed_response_str = response.split()
@@ -134,20 +135,3 @@ if __name__ == "__main__":
     lift.calibrate()
 
     lift.disconnect()
-
-
-# # setup hall sensor
-# PIN_HALL = 26
-# gpio.setmode(gpio.BCM)
-# gpio.setup(PIN_HALL, gpio.IN)
-
-# lift = Lift()
-
-# while not gpio.input(PIN_HALL):
-#     print("Moving up")
-#     lift.move(255)
-#     time.sleep(0.2)
-
-
-# print("Stopping lift")
-# lift.move(0)
