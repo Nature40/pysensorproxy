@@ -71,7 +71,7 @@ class Microphone(FileSensor):
             file_path=file_path,
             save_cmd=save_cmd)
 
-        logger.debug("Recording audio: {}".format(cmd))
+        logger.debug("Recording audio: '{}'".format(cmd))
 
         p = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -80,6 +80,6 @@ class Microphone(FileSensor):
 
         if p.returncode != 0:
             raise SensorNotAvailableException(
-                "arecord returned {}: {}".format(p.returncode, err_msg))
+                "arecord returned {}: '{}'".format(p.returncode, err_msg))
 
         logger.info("audio file written to '{}'".format(file_path))

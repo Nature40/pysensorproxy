@@ -97,7 +97,7 @@ class SensorProxy:
 
     def _test_metering(self):
         for name, metering in self.meterings.items():
-            logger.debug("Testing metering {}".format(name))
+            logger.debug("Testing metering '{}'".format(name))
             for sensor_name, params in metering["sensors"].items():
                 if "duration" in params:
                     params = params.copy()
@@ -109,11 +109,11 @@ class SensorProxy:
             sensor = self.sensors[sensor_name]
             sensor.record(**params)
         except KeyError:
-            logger.warn("Sensor {} is not defined in config: {}".format(
+            logger.warn("Sensor '{}' is not defined in config: '{}'".format(
                 sensor_name, self.config_path))
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
             logger.warn(
-                "Sensor {} is not available: {}".format(sensor_name, e))
+                "Sensor '{}' is not available: '{}'".format(sensor_name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
         start = 0
@@ -125,7 +125,7 @@ class SensorProxy:
         if "end" in metering["schedule"]:
             end = parse_time(metering["schedule"]["end"])
 
-        logger.info("metering {} from {} until {}, every {}".format(
+        logger.info("metering '{}' from {} until {}, every {}".format(
             name, start, end, interval))
 
         for sensor_name, params in metering["sensors"].items():
@@ -138,7 +138,7 @@ class SensorProxy:
                 s.at_time = time
                 s.do(run_threaded, self._meter, sensor_name, params)
 
-                logger.debug("scheduled {}, next run: {}".format(
+                logger.debug("scheduled '{}', next run: {}".format(
                     sensor_name, s.next_run))
 
     def run(self):
