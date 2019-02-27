@@ -182,12 +182,12 @@ def main():
     setup_logging(args.verbose)
 
     proxy = SensorProxy(args.config, args.metering)
-    os.chdir(proxy.storage_path)
 
     if args.test:
         logger.info("Test finished")
         return
 
+    os.chdir(proxy.storage_path)
     Handler = http.server.SimpleHTTPRequestHandler
     httpd = socketserver.TCPServer(("", args.port), Handler)
 
