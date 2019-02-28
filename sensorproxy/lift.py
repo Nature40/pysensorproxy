@@ -30,7 +30,7 @@ class LiftSocketCommunicationException(LiftConnectionException):
 
 
 class Lift:
-    def __init__(self, mgr, ssid, psk, hall_bottom_pin, hall_top_pin, ip="192.168.4.254", port=35037, update_interval_s=0.1):
+    def __init__(self, mgr, ssid, psk, hall_bottom_pin, hall_top_pin, ip="192.168.3.254", port=35037, update_interval_s=0.1):
         self.mgr = mgr
         self.ip = ip
         self.port = port
@@ -161,13 +161,13 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     mgr = None
-    mgr = WiFiManager()
+    mgr = WiFiManager(interface="wlan1")
 
     lift = Lift(
         mgr=mgr,
-        ssid="nature40.liftsystem.949f",
+        ssid="nature40.liftsystem.34a4",
         psk="supersicher",
-        ip="192.168.4.254",
+        ip="192.168.3.254",
         port=35037,
         hall_bottom_pin=5,
         hall_top_pin=6,

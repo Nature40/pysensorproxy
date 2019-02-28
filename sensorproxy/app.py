@@ -107,10 +107,12 @@ class SensorProxy:
         logger.info("top hall sensor returned {}".format(
             self.lift.hall_top))
 
-        logger.debug("testing lift connection (without connecting wifi)")
+        logger.debug("testing lift connection")
         try:
-            self.lift.connect(dry=True)
-            self.lift.disconnect(dry=True)
+            self.lift.connect()
+            logger.info("calibrating lift")
+            self.lift.calibrate()
+            self.lift.disconnect()
         except LiftSocketCommunicationException as e:
             logger.error("Couldn't connect to lift: {}".format(e))
 

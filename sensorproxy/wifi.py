@@ -68,9 +68,11 @@ class WiFiManager:
         self.wpa_supplicant = subprocess.Popen(
             wpa_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        run(["dhclient", self.interface])
-
-        logger.info("wifi connection established")
+        try:
+            run(["timeout", "10", "dhclient", self.interface])
+            logger.info("wifi connection established")
+        except Exception as e:
+            logger.error("wifi connection failed: {}".format(e))
 
     def disconnect(self):
         logger.info("disconnecting wifi")
