@@ -163,7 +163,7 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     mgr = None
-    mgr = WiFiManager(interface="wlan1")
+    mgr = WiFiManager(interface="wlan0")
 
     lift = Lift(
         mgr=mgr,
