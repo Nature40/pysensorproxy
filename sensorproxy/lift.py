@@ -10,12 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 class Lift:
-    def __init__(self, mgr, ssid, psk, hall_bottom, hall_top, ip="192.168.4.254", port=35037, update_interval_s=0.1):
+    def __init__(self, mgr, ssid, psk, hall_bottom_pin, hall_top_pin, ip="192.168.4.254", port=35037, update_interval_s=0.1):
         self.mgr = mgr
         self.ip = ip
         self.port = port
-        self.hall_bottom = hall_bottom
-        self.hall_top = hall_top
+        self.hall_bottom_pin = hall_bottom_pin
+        self.hall_top_pin = hall_top_pin
         self.update_interval_s = update_interval_s
 
         self.wifi = WiFi(ssid, psk)
@@ -25,14 +25,14 @@ class Lift:
         self.time_down_s = None
 
         gpio.setmode(gpio.BCM)
-        gpio.setup(hall_bottom, gpio.IN)
-        gpio.setup(hall_top, gpio.IN)
+        gpio.setup(hall_bottom_pin, gpio.IN)
+        gpio.setup(hall_top_pin, gpio.IN)
 
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
 
-    def connect(self):
-        if self.mgr:
+    def connect(self, dry=False):
+        if self.mgr and not dry:
             logger.info("connecting to '{}'".format(self.wifi.ssid))
             self.mgr.connect(self.wifi)
         else:
@@ -46,22 +46,30 @@ class Lift:
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
-    def disconnect(self):
+    def disconnect(self, dry=False):
         logger.info("disconnecting from lift")
         self.nc.kill()
         self.nc = None
 
-        if self.mgr:
+        if self.mgr and not dry:
             self.mgr.disconnect()
 
     class MovingException(Exception):
         pass
 
+    @property
+    def hall_bottom(self):
+        return gpio.input(self.hall_bottom_pin)
+
+    @property
+    def hall_top(self):
+        return gpio.input(self.hall_top_pin)
+
     def _check_limits(self, speed: int):
-        if speed > 0 and gpio.input(self.hall_top):
+        if speed > 0 and self.hall_top:
             raise Lift.MovingException("cannot move upwards, reached sensor.")
 
-        if speed < 0 and gpio.input(self.hall_bottom):
+        if speed < 0 and self.hall_bottom:
             raise Lift.MovingException(
                 "cannot move downwards, reached sensor.")
 
@@ -141,8 +149,8 @@ if __name__ == "__main__":
         psk="supersicher",
         ip="192.168.4.254",
         port=35037,
-        hall_bottom=5,
-        hall_top=6,
+        hall_bottom_pin=5,
+        hall_top_pin=6,
         update_interval_s=0.1)
     lift.connect()
 

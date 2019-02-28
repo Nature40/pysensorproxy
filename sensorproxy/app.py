@@ -64,17 +64,16 @@ class SensorProxy:
 
         self.wifi_mgr = WiFiManager(**config["wifi"])
 
+        self.lift = None
         if "lift" in config:
             self.lift = Lift(self.wifi_mgr, **config["lift"])
-        else:
-            self.lift = None
+            self._test_lift()
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
             self.meterings = yaml.load(metering_file)
 
         self._test_metering()
-        # self._test_lift()
 
     def _init_logging(self, file_name="sensorproxy.log"):
         logfile_path = os.path.join(self.storage_path, file_name)
@@ -90,10 +89,52 @@ class SensorProxy:
         main_logger.addHandler(logfile_handler)
 
     def _test_lift(self):
-        if self.lift:
-            logger.debug("testing lift connection")
-            self.lift.connect()
-            self.lift.disconnect()
+        if not self.lift:
+            return
+
+        logger.debug("testing lift hall sensors")
+        logger.info("bottom hall sensor returned {}".format(
+            self.lift.hall_bottom))
+        logger.info("top hall sensor returned {}".format(
+            self.lift.hall_top))
+
+        logger.debug("testing lift connection (without connecting wifi)")
+        self.lift.connect(dry=True)
+        self.lift.disconnect(dry=True)
+
+    def test_interactive(self):
+        self._test_hall_interactive()
+
+    def _test_hall_interactive(self):
+        if not self.lift:
+            logger.info(
+                "Interactive hall sensor test: no lift configured, skipping test.")
+            return
+
+        logger.info(
+            "Interactive hall sensor test: approach with a magnet to trigger 1, remove magnet to trigger 0")
+
+        while self.lift.hall_bottom == 0:
+            logger.info(
+                "Interactive hall sensor test (1/4):  bottom sensor reads 0, approach with a magnet...")
+            time.sleep(1)
+
+        while self.lift.hall_bottom == 1:
+            logger.info(
+                "Interactive hall sensor test (2/4): bottom sensor reads 1, remove magnet...")
+            time.sleep(1)
+
+        while self.lift.hall_top == 0:
+            logger.info(
+                "Interactive hall sensor test (3/4): top sensor reads 0, approach with a magnet...")
+            time.sleep(1)
+
+        while self.lift.hall_top == 1:
+            logger.info(
+                "Interactive hall sensor test (4/4): top sensor reads 1, remove magnet...")
+            time.sleep(1)
+
+        logger.info("Interactive hall sensor test finished.")
 
     def _test_metering(self):
         for name, metering in self.meterings.items():
@@ -189,7 +230,8 @@ def main():
     proxy = SensorProxy(args.config, args.metering)
 
     if args.test:
-        logger.info("Test finished")
+        proxy.test_interactive()
+        logger.info("Testing finished")
         return
 
     os.chdir(proxy.storage_path)
