@@ -59,10 +59,12 @@ class Lift:
             logger.info("wifi is handled externally")
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.settimeout(self.update_interval_s)
+        self.sock.settimeout(5)
 
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
+
+        self.sock.settimeout(self.update_interval_s)
 
     def disconnect(self, dry=False):
         logger.info("disconnecting from lift")
