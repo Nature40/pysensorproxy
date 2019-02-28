@@ -17,6 +17,9 @@ sensors:                          # list of sensors
     img_format: jpeg
 
 storage: /pysensorproxy/data      # path to save files
+log:
+  level: warn                       # choose: critical, error, warning, info, debug, notset
+  file_name: sensorproxy.txt
 wifi:                             # wifi properties to be configured
   interface: wlan0                  # the interface to be managed
 

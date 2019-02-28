@@ -52,7 +52,7 @@ class SensorProxy:
 
         logger.info("using storage at '{}'".format(self.storage_path))
 
-        self._init_logging()
+        self._init_logging(**config["log"])
 
         self.sensors = {}
         for name, params in config["sensors"].items():
@@ -75,14 +75,23 @@ class SensorProxy:
 
         self._test_metering()
 
-    def _init_logging(self, file_name="sensorproxy.log"):
+    def _init_logging(self, level="info", file_name="sensorproxy.log"):
         logfile_path = os.path.join(self.storage_path, file_name)
         logger.info("Writing logs to '{}'".format(logfile_path))
+
+        try:
+            logging_level = logging._nameToLevel[level.upper()]
+            logger.info("Using logging level '{}' for logfile".format(level))
+        except KeyError:
+            logging_level = logging.INFO
+            logger.warn(
+                "'{}' is no valid logging level, defaulting to 'info'".format(level))
 
         # create logfile
         logfile_formatter = logging.Formatter(
             '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         logfile_handler = logging.FileHandler(logfile_path)
+        logfile_handler.setLevel(logging_level)
         logfile_handler.setFormatter(logfile_formatter)
 
         main_logger = logging.getLogger("sensorproxy")
