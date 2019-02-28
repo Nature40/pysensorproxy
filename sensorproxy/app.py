@@ -20,7 +20,7 @@ import sensorproxy.sensors.environment
 import sensorproxy.sensors.optical
 import sensorproxy.sensors.rsync
 from sensorproxy.wifi import WiFiManager
-from sensorproxy.lift import Lift
+from sensorproxy.lift import Lift, LiftSocketCommunicationException
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +108,11 @@ class SensorProxy:
             self.lift.hall_top))
 
         logger.debug("testing lift connection (without connecting wifi)")
-        self.lift.connect(dry=True)
-        self.lift.disconnect(dry=True)
+        try:
+            self.lift.connect(dry=True)
+            self.lift.disconnect(dry=True)
+        except LiftSocketCommunicationException as e:
+            logger.error("Couldn't connect to lift: {}".format(e))
 
     def test_interactive(self):
         self._test_hall_interactive()
@@ -124,22 +127,22 @@ class SensorProxy:
             "Interactive hall sensor test: approach with a magnet to trigger 1, remove magnet to trigger 0")
 
         while self.lift.hall_bottom == 0:
-            logger.info(
+            logger.warn(
                 "Interactive hall sensor test (1/4):  bottom sensor reads 0, approach with a magnet...")
             time.sleep(1)
 
         while self.lift.hall_bottom == 1:
-            logger.info(
+            logger.warn(
                 "Interactive hall sensor test (2/4): bottom sensor reads 1, remove magnet...")
             time.sleep(1)
 
         while self.lift.hall_top == 0:
-            logger.info(
+            logger.warn(
                 "Interactive hall sensor test (3/4): top sensor reads 0, approach with a magnet...")
             time.sleep(1)
 
         while self.lift.hall_top == 1:
-            logger.info(
+            logger.warn(
                 "Interactive hall sensor test (4/4): top sensor reads 1, remove magnet...")
             time.sleep(1)
 

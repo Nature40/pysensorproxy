@@ -13,19 +13,19 @@ class MovingException(Exception):
     pass
 
 
-class LiftCommandException(Exception):
+class LiftConnectionException(Exception):
     pass
 
 
-class UnknownReponseException(LiftCommandException):
+class UnknownReponseException(LiftConnectionException):
     pass
 
 
-class WrongSpeedResponseException(LiftCommandException):
+class WrongSpeedResponseException(LiftConnectionException):
     pass
 
 
-class LiftSocketTimeoutException(LiftCommandException):
+class LiftSocketCommunicationException(LiftConnectionException):
     pass
 
 
@@ -60,6 +60,7 @@ class Lift:
 
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.settimeout(self.update_interval_s)
+
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
@@ -94,7 +95,11 @@ class Lift:
 
         logger.debug("sending speed {}".format(speed))
         request = str(speed).encode()
-        self.sock.sendto(request, (self.ip, self.port))
+        try:
+            self.sock.sendto(request, (self.ip, self.port))
+        except OSError as e:
+            raise LiftSocketCommunicationException(
+                "Sending speed failed: {}".format(e))
 
         try:
             response = self.sock.recvfrom(1024)[0].decode()
@@ -109,7 +114,7 @@ class Lift:
                 raise WrongSpeedResponseException("Responded speed ({}) does not match requested ({})".format(
                     speed_response, speed))
         except socket.timeout as e:
-            raise LiftSocketTimeoutException(
+            raise LiftSocketCommunicationException(
                 "Socket timeout while reading response: {}".format(e))
 
         return speed_response
@@ -122,9 +127,9 @@ class Lift:
             try:
                 self._send_speed(speed)
                 time.sleep(self.update_interval_s)
-            except LiftCommandException as e:
+            except LiftConnectionException as e:
                 logger.warn("Lift command exception: {}".format(e))
-                pass
+                continue
             except MovingException as e:
                 ride_end_ts = time.time()
                 travel_time_s = ride_end_ts - ride_start_ts
@@ -156,7 +161,7 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     mgr = None
-    # mgr = WiFiManager()
+    mgr = WiFiManager()
 
     lift = Lift(
         mgr=mgr,
@@ -167,8 +172,10 @@ if __name__ == "__main__":
         hall_bottom_pin=5,
         hall_top_pin=6,
         update_interval_s=0.1)
-    lift.connect()
 
-    lift.calibrate()
-
-    lift.disconnect()
+    try:
+        lift.connect()
+        lift.calibrate()
+        lift.disconnect()
+    except LiftConnectionException as e:
+        logger.error("Couldn't connect to lift: {}".format(e))
