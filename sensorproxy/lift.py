@@ -1,12 +1,32 @@
+import socket
 import time
 import logging
-import subprocess
 
 import RPi.GPIO as gpio
 
 from sensorproxy.wifi import WiFi, WiFiManager
 
 logger = logging.getLogger(__name__)
+
+
+class MovingException(Exception):
+    pass
+
+
+class LiftCommandException(Exception):
+    pass
+
+
+class UnknownReponseException(LiftCommandException):
+    pass
+
+
+class WrongSpeedResponseException(LiftCommandException):
+    pass
+
+
+class LiftSocketTimeoutException(LiftCommandException):
+    pass
 
 
 class Lift:
@@ -19,7 +39,7 @@ class Lift:
         self.update_interval_s = update_interval_s
 
         self.wifi = WiFi(ssid, psk)
-        self.nc = None
+        self.sock = None
 
         self.time_up_s = None
         self.time_down_s = None
@@ -38,24 +58,18 @@ class Lift:
         else:
             logger.info("wifi is handled externally")
 
-        cmd = ["nc", self.ip, str(self.port)]
-        logger.debug("starting session: {}".format(" ".join(cmd)))
-        self.nc = subprocess.Popen(
-            cmd, stdout=subprocess.PIPE, stdin=subprocess.PIPE)
-
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.settimeout(self.update_interval_s)
         self._send_speed(0)
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
     def disconnect(self, dry=False):
         logger.info("disconnecting from lift")
-        self.nc.kill()
-        self.nc = None
+        self.sock.close()
+        self.sock = None
 
         if self.mgr and not dry:
             self.mgr.disconnect()
-
-    class MovingException(Exception):
-        pass
 
     @property
     def hall_bottom(self):
@@ -67,37 +81,36 @@ class Lift:
 
     def _check_limits(self, speed: int):
         if speed > 0 and self.hall_top:
-            raise Lift.MovingException("cannot move upwards, reached sensor.")
+            raise MovingException("cannot move upwards, reached sensor.")
 
         if speed < 0 and self.hall_bottom:
-            raise Lift.MovingException(
-                "cannot move downwards, reached sensor.")
+            raise MovingException("cannot move downwards, reached sensor.")
 
     def _send_speed(self, speed: int):
-        if not self.nc:
+        if not self.sock:
             raise Exception("not connected to a lift")
 
         self._check_limits(speed)
 
         logger.debug("sending speed {}".format(speed))
-        request = "{}\n".format(speed).encode()
-        self.nc.stdin.write(request)
-        self.nc.stdin.flush()
+        request = str(speed).encode()
+        self.sock.sendto(request, (self.ip, self.port))
 
-        response = self.nc.stdout.readline().decode()
-        logger.debug("received '{}'".format(response.strip()))
+        try:
+            response = self.sock.recvfrom(1024)[0].decode()
+            logger.debug("received '{}'".format(response.strip()))
 
-        cmd, speed_response_str = response.split()
-        speed_response = int(speed_response_str)
+            cmd, speed_response_str = response.split()
+            speed_response = int(speed_response_str)
 
-        if cmd != "set":
-            raise Exception(
-                "LiftControl responded with command '{}'".format(cmd))
-        elif speed != speed_response:
-            logger.warn("responded speed ({}) does not match requested ({})".format(
-                speed_response, speed))
-        else:
-            logger.debug("speed set successfully")
+            if cmd != "set":
+                raise UnknownReponseException("Response: '{}'".format(cmd))
+            elif speed != speed_response:
+                raise WrongSpeedResponseException("Responded speed ({}) does not match requested ({})".format(
+                    speed_response, speed))
+        except socket.timeout as e:
+            raise LiftSocketTimeoutException(
+                "Socket timeout while reading response: {}".format(e))
 
         return speed_response
 
@@ -105,16 +118,18 @@ class Lift:
         logger.info("moving lift with speed {}".format(speed))
         ride_start_ts = time.time()
 
-        try:
-            while True:
+        while True:
+            try:
                 self._send_speed(speed)
                 time.sleep(self.update_interval_s)
-        except Lift.MovingException:
-            ride_end_ts = time.time()
-            travel_time_s = ride_end_ts - ride_start_ts
-            logger.info("end reached in {}s".format(travel_time_s))
-
-            self._send_speed(0)
+            except LiftCommandException as e:
+                logger.warn("Lift command exception: {}".format(e))
+                pass
+            except MovingException as e:
+                ride_end_ts = time.time()
+                travel_time_s = ride_end_ts - ride_start_ts
+                logger.info("end reached in {}s".format(travel_time_s))
+                break
 
         return travel_time_s
 
@@ -141,7 +156,7 @@ if __name__ == "__main__":
     logger.addHandler(handler)
 
     mgr = None
-    mgr = WiFiManager()
+    # mgr = WiFiManager()
 
     lift = Lift(
         mgr=mgr,
