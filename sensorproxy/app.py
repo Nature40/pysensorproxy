@@ -73,8 +73,6 @@ class SensorProxy:
         self.rsync = None
         if "rsync" in config:
             self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
-            # XXX
-            self.rsync.sync(dry=True)
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:

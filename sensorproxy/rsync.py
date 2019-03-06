@@ -1,5 +1,6 @@
-import subprocess
 import logging
+import schedule
+import subprocess
 
 from sensorproxy.wifi import WiFi
 
@@ -12,7 +13,7 @@ class RsyncException(Exception):
 
 
 class RsyncSender:
-    def __init__(self, proxy, mgr, ssid, psk, destination):
+    def __init__(self, proxy, mgr, ssid, psk, destination, start_time):
         self.proxy = proxy
         self.mgr = mgr
         self.ssid = ssid
@@ -20,6 +21,7 @@ class RsyncSender:
         self.destination = destination
 
         self.wifi = WiFi(ssid, psk)
+        schedule.every().day.at(start_time).do(self.sync)
 
     def _rsync_cmd(self, dry):
         cmd = ["rsync", "-avz", "--remove-source-files"]
