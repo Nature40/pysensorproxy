@@ -17,14 +17,26 @@ sensors:                          # list of sensors
     img_format: jpeg
 
 storage: /pysensorproxy/data      # path to save files
+
 log:
   level: warn                       # choose: critical, error, warning, info, debug, notset
   file_name: sensorproxy.txt
+
 wifi:                             # wifi properties to be configured
-  interface: wlan1                  # the interface to be managed
+  interface: wlan0                  # the interface to be managed
 
 lift:                             # lift configuration
   ssid: nature40.liftsystem.34a4
   psk: supersicher
   hall_bottom_pin: 5
   hall_top_pin: 6
+
+# rsync connects to the configured WiFi and syncs it's storage.
+# NOTE:
+# - the store's SSH public key must be inserted in /root/.ssh/known_hosts
+# - the root user needs a SSH key pair
+# - the root user's public key must be inserted in ~pi/.ssh/authorized_keys
+rsync:
+  ssid: nature40.liftsystem.34a4
+  psk: supersicher
+  destination: pi@192.168.4.1:/home/pi/dump

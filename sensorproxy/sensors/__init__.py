@@ -3,6 +3,5 @@ __all__ = [
         "base",
         "environment",
         "optical",
-        "random",
-        "rsync"
+        "random"
         ]

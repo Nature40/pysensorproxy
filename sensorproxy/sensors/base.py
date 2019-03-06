@@ -11,17 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 class Sensor:
-    def __init__(self, name, storage_path, proxy, **kwargs):
+    def __init__(self, name, storage_path, **kwargs):
         self.name = name
         self.storage_path = storage_path
-        self.proxy = proxy
         super().__init__()
 
     @abstractmethod
     def record(self, *args, dry=False, **kwargs):
         pass
 
-    @abstractmethod
     def refresh(self):
         pass
 
@@ -97,11 +95,6 @@ class FileSensor(Sensor):
 
         self.records.append(os.path.split(file_path)[1])
         return file_path
-
-    def refresh(self):
-        # FileSensor's file_path is a property method and is changed for each
-        # record call. Nothing needs to be done here.
-        pass
 
 
 classes = {}
