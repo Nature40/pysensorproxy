@@ -23,7 +23,8 @@ log:
   file_name: sensorproxy.txt
 
 wifi:                             # wifi properties to be configured
-  interface: wlan0                  # the interface to be managed
+  interface: wlan0                # the interface to be managed
+  host_ap: true                   # open an access point if there is no outbounding connection
 
 lift:                             # lift configuration
   ssid: nature40.liftsystem.34a4
