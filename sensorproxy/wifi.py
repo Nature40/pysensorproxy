@@ -56,7 +56,7 @@ class WiFiManager:
         self.interface = interface
         self.wpa_supplicant = None
 
-    def connect(self, wifi):
+    def connect(self, wifi, timeout="30"):
         logger.info("connecting to wifi '{}'".format(wifi.ssid))
         if self.wpa_supplicant != None:
             self.disconnect()
@@ -65,13 +65,13 @@ class WiFiManager:
         wpa_cmd = ["wpa_supplicant", "-c", config_path, "-i", self.interface]
 
         logger.debug("running {}".format(" ".join(wpa_cmd)))
-        self.wpa_supplicant = subprocess.Popen(
-            wpa_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        self.wpa_supplicant = subprocess.Popen(wpa_cmd)
 
         try:
-            run(["timeout", "10", "dhclient", self.interface])
+            run(["timeout", timeout, "dhclient", self.interface])
             logger.info("wifi connection established")
         except Exception as e:
+            self.wpa_supplicant.kill()
             logger.error("wifi connection failed: {}".format(e))
 
     def disconnect(self):
