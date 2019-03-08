@@ -8,11 +8,25 @@ logger = logging.getLogger(__name__)
 
 
 class WiFi:
+    """Class to hold configuration of a WiFi Network."""
+
     def __init__(self, ssid, psk):
+        """
+        Args:
+            ssid (str): WiFi SSID
+            psk (str): WiFi pre-shared key
+        """
+
         self.ssid = ssid
         self.psk = psk
 
     def _generate_config(self):
+        """Generates a wpa_supplicant config file from the configuration.
+
+        Returns:
+            str: path to the generated config file
+        """
+
         base64_name = base64.encodestring(
             self.ssid.encode()).decode()[:-1]
         config_path = "/tmp/wpa_{}.conf".format(base64_name)
@@ -37,6 +51,18 @@ class WiFi:
 
 
 def run(args):
+    """Run a command
+
+    Args:
+        args ([str]): command and arguments to run
+
+    Raises:
+        Exception: if return code is not 0
+
+    Returns:
+        str: stdout of the command
+    """
+
     logger.debug("running {}".format(" ".join(args)))
     p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     p.wait()
@@ -52,11 +78,25 @@ def run(args):
 
 
 class WiFiManager:
+    """A Class to manage WiFi connections."""
+
     def __init__(self, interface="wlan0"):
+        """
+        Args:
+            interface (str): WiFi interface to be managed
+        """
+
         self.interface = interface
         self.wpa_supplicant = None
 
     def connect(self, wifi, timeout="30"):
+        """Connect to WiFi.
+
+        Args:
+            wifi (WiFi): WiFi to connect to
+            timeout (int): timeout for dhclient
+        """
+
         logger.info("connecting to wifi '{}'".format(wifi.ssid))
         if self.wpa_supplicant != None:
             self.disconnect()
@@ -75,6 +115,8 @@ class WiFiManager:
             logger.error("wifi connection failed: {}".format(e))
 
     def disconnect(self):
+        """Disconnect from current WiFi"""
+
         logger.info("disconnecting wifi")
         run(["dhclient", "-r", self.interface])
 
