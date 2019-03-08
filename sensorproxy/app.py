@@ -18,9 +18,10 @@ import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
 import sensorproxy.sensors.optical
-import sensorproxy.sensors.rsync
 from sensorproxy.wifi import WiFiManager
 from sensorproxy.lift import Lift, LiftSocketCommunicationException
+from sensorproxy.rsync import RsyncSender, RsyncException
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ class SensorProxy:
         self.sensors = {}
         for name, params in config["sensors"].items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
-            sensor = sensor_cls(name, self.storage_path, self, **params)
+            sensor = sensor_cls(name, self.storage_path, **params)
             self.sensors[name] = sensor
 
             logger.info("added sensor {} ({})".format(name, params["type"]))
@@ -68,6 +69,10 @@ class SensorProxy:
         if "lift" in config:
             self.lift = Lift(self.wifi_mgr, **config["lift"])
             self._test_lift()
+
+        self.rsync = None
+        if "rsync" in config:
+            self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
