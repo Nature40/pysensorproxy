@@ -42,43 +42,28 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file)
 
-        if "storage" in config:
-            self.storage_path = config["storage"]
-            try:
-                os.makedirs(self.storage_path)
-            except FileExistsError:
-                pass
-        else:
-            self.storage_path = ''
-
-        logger.info("using storage at '{}'".format(self.storage_path))
-
+        self._init_storage(**config)
         self._init_logging(**config["log"])
-
-        self.sensors = {}
-        for name, params in config["sensors"].items():
-            sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
-            sensor = sensor_cls(name, self.storage_path, **params)
-            self.sensors[name] = sensor
-
-            logger.info("added sensor {} ({})".format(name, params["type"]))
-
-        self.wifi_mgr = WiFiManager(**config["wifi"])
-
-        self.lift = None
-        if "lift" in config:
-            self.lift = Lift(self.wifi_mgr, **config["lift"])
-            self._test_lift()
-
-        self.rsync = None
-        if "rsync" in config:
-            self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
+        self._init_sensors(config["sensors"])
+        self._init_optionals(config)
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
             self.meterings = yaml.load(metering_file)
 
         self._test_metering()
+
+        self._reset_lift()
+
+    def _init_storage(self, storage_path=".", **kwargs):
+        self.storage_path = storage_path
+
+        try:
+            os.makedirs(self.storage_path)
+        except FileExistsError:
+            pass
+
+        logger.info("using storage at '{}'".format(self.storage_path))
 
     def _init_logging(self, level="info", file_name="sensorproxy.log"):
         logfile_path = os.path.join(self.storage_path, file_name)
@@ -102,21 +87,36 @@ class SensorProxy:
         main_logger = logging.getLogger("sensorproxy")
         main_logger.addHandler(logfile_handler)
 
-    def _test_lift(self):
+    def _init_sensors(self, sensor_config):
+        self.sensors = {}
+        for name, params in sensor_config.items():
+            sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
+            sensor = sensor_cls(name, self.storage_path, **params)
+            self.sensors[name] = sensor
+
+            logger.info("added sensor {} ({})".format(name, params["type"]))
+
+    def _init_optionals(self, config):
+        self.wifi_mgr = None
+        if "wifi" in config:
+            self.wifi_mgr = WiFiManager(**config["wifi"])
+
+        self.lift = None
+        if "lift" in config:
+            self.lift = Lift(self.wifi_mgr, **config["lift"])
+
+        self.rsync = None
+        if "rsync" in config:
+            self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
+
+    def _reset_lift(self):
         if not self.lift:
             return
 
-        logger.debug("testing lift hall sensors")
-        logger.info("bottom hall sensor returned {}".format(
-            self.lift.hall_bottom))
-        logger.info("top hall sensor returned {}".format(
-            self.lift.hall_top))
-
-        logger.debug("testing lift connection")
         try:
             self.lift.connect()
-            logger.info("calibrating lift")
-            self.lift.calibrate()
+            logger.info("Moving Lift down")
+            self.lift.move(-255)
             self.lift.disconnect()
         except LiftSocketCommunicationException as e:
             logger.error("Couldn't connect to lift: {}".format(e))
