@@ -43,7 +43,7 @@ class Sensor:
     def time_repr():
         """Current time, formatted."""
 
-        return time.strftime("%Y%m%d_%H%M%S", time.gmtime())
+        return time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
 
 
 class LogSensor(Sensor):
