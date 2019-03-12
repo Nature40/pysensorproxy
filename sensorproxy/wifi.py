@@ -50,31 +50,46 @@ class WiFi:
         return config_path
 
 
-def run(args):
+class ReturncodeException(Exception):
+    """Exception for invalid returncodes."""
+
+
+def run(args, timeout=15, valid_returncodes=[0]):
     """Run a command
 
     Args:
         args ([str]): command and arguments to run
+        timeout (int): maximum timeout for the command
+        valid_returncodes ([int]): returncodes not raising an exception
 
     Raises:
-        Exception: if return code is not 0
+        ReturncodeException: if return code is not in
 
     Returns:
         str: stdout of the command
     """
 
     logger.debug("running {}".format(" ".join(args)))
-    p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    p.wait()
+    p = subprocess.Popen(args)
 
-    stdout = p.stdout.read()
-    stderr = p.stderr.read()
+    try:
+        outs, errs = p.communicate(timeout=timeout)
 
-    if p.returncode != 0:
-        raise Exception("{} error {}: {}".format(
-            args[0], p.returncode, stderr.decode()))
+        if p.returncode not in valid_returncodes:
+            raise ReturncodeException("Returncode {} is not in list of valid ({}), stderr: {}".format(
+                p.returncode, valid_returncodes, errs))
 
-    return stdout.decode()
+    except subprocess.TimeoutExpired as e:
+        p.kill()
+        outs, errs = p.communicate()
+        logger.error("Process timed out, stderr: {}".format(errs))
+        raise e
+
+    return outs
+
+
+class WiFiConnectionError(Exception):
+    """Exception for non-successful WiFi connections."""
 
 
 class WiFiManager:
@@ -91,29 +106,18 @@ class WiFiManager:
 
         self.wpa_supplicant = None
 
-    def _run_ap(self, cmd):
-        logger.info("{}ing an access point".format(cmd))
-
-        hostapd_cmd = ["systemctl", cmd, "hostapd"]
-        p = subprocess.Popen(hostapd_cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-        p.wait()
-        stderr = p.stderr.read()
-
-        if p.returncode != 0:
-            raise Exception("{}ing hostapd returned {}: {}".format(
-                cmd, p.returncode, stderr.decode()))
-
     def start_ap(self):
         if self.wpa_supplicant is not None:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
-            self._run_ap("start")
+            run(["ifup", self.interface])
+            run(["systemctl", "start", "hostapd"])
 
     def stop_ap(self):
-        self._run_ap("stop")
+        run(["systemctl", "stop", "hostapd"])
+        run(["ifdown", self.interface])
 
-    def connect(self, wifi, timeout="30"):
+    def connect(self, wifi, timeout=30):
         """Connect to WiFi.
 
         Args:
@@ -134,13 +138,15 @@ class WiFiManager:
         self.wpa_supplicant = subprocess.Popen(wpa_cmd)
 
         try:
-            run(["timeout", timeout, "dhclient", self.interface])
+            run(["dhclient", self.interface], timeout=timeout)
             logger.info("wifi connection established")
         except Exception as e:
             self.wpa_supplicant.kill()
-            logger.error("wifi connection failed: {}".format(e))
-
+            self.wpa_supplicant = None
             self.start_ap()
+
+            logger.error("wifi connection failed: {}".format(e))
+            raise WiFiConnectionError(e)
 
     def disconnect(self):
         """Disconnect from current WiFi"""

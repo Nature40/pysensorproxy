@@ -87,10 +87,14 @@ class Lift:
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
 
-    def connect(self, dry=False):
+    def connect(self, dry=False, timeout=10):
         """Connect to the configured lift.
 
-        dry (bool): Don't connect to configured WiFi.
+        Args:
+            dry (bool): Don't connect to configured WiFi.
+
+        Raises:
+            LiftSocketCommunicationException: if no response from lift on initial connect
         """
 
         if self.mgr and not dry:
@@ -103,7 +107,12 @@ class Lift:
         self.sock.setblocking(False)
 
         self._send_speed(0)
+
+        start_ts = time.time()
         while self._current_speed == None:
+            if start_ts + timeout < time.time():
+                raise LiftSocketCommunicationException(
+                    "No response in {}s from lift in initial connect".format(timeout))
             self._recv_responses()
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))

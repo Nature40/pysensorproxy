@@ -115,11 +115,17 @@ class SensorProxy:
 
         try:
             self.lift.connect()
-            logger.info("Moving Lift down")
-            self.lift.move(-255)
-            self.lift.disconnect()
+        except sensorproxy.wifi.WiFiConnectionError as e:
+            logger.error("Couldn't connect to lift wifi: {}".format(e))
+            return
         except LiftSocketCommunicationException as e:
             logger.error("Couldn't connect to lift: {}".format(e))
+            self.lift.disconnect()
+            return
+
+        logger.info("Moving Lift down")
+        self.lift.move(-255)
+        self.lift.disconnect()
 
     def test_interactive(self):
         self._test_hall_interactive()
