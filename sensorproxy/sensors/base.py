@@ -89,7 +89,7 @@ class LogSensor(Sensor):
 
         with open(self.file_path, "a") as file:
             writer = csv.writer(file)
-            writer.writerow(["ts"] + self._header)
+            writer.writerow(["Timestamp"] + self._header)
 
 
 class FileSensor(Sensor):

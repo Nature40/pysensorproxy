@@ -18,7 +18,7 @@ class AM2302(LogSensor):
 
     @property
     def _header(self):
-        return ["temp", "humid"]
+        return ["Temperature (°C)", "Humidity (%)"]
 
     def _read(self):
         logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
@@ -47,27 +47,17 @@ class TSL2561(LogSensor):
         global tsl2561
         import tsl2561
 
-        try:
-            self.tsl2561 = tsl2561.TSL2561()
-        except OSError:
-            self.tsl2561 = None
-
     @property
     def _header(self):
-        return ["lux", "broadband", "ir"]
+        return ["Illuminance (lux)", "broadband", "ir"]
 
     def _read(self):
         logger.debug("Reading TSL2561 sensor via i2c")
 
-        if self.tsl2561 == None:
-            try:
-                self.tsl2561 = tsl2561.TSL2561()
-            except OSError as e:
-                raise SensorNotAvailableException(e)
-
         try:
-            broadband, ir = self.tsl2561._get_luminosity()
-            lux = self.tsl2561._calculate_lux(broadband, ir)
+            tsl2561 = tsl2561.TSL2561()
+            broadband, ir = tsl2561._get_luminosity()
+            lux = tsl2561._calculate_lux(broadband, ir)
         except OSError as e:
             raise SensorNotAvailableException(e)
 
