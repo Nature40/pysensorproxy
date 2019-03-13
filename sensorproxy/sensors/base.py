@@ -3,6 +3,7 @@ import time
 import uuid
 import csv
 import logging
+import threading
 
 from abc import ABC, abstractmethod
 from typing import Type
@@ -22,6 +23,7 @@ class Sensor:
 
         self.name = name
         self.storage_path = storage_path
+        self.lock = threading.Lock()
         super().__init__()
 
     @abstractmethod

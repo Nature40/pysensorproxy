@@ -164,48 +164,85 @@ class SensorProxy:
     def _test_metering(self):
         for name, metering in self.meterings.items():
             logger.debug("Testing metering '{}'".format(name))
-            for sensor_name, params in metering["sensors"].items():
-                if "duration" in params:
-                    params = params.copy()
-                    params["duration"] = "1s"
-                self._meter(sensor_name, params)
+            self._run_metering(metering, test=True)
 
-    def _meter(self, sensor_name: str, params: dict):
+    def _run_metering(self, metering, test=False):
+        sensors = [self.sensors[name] for name in metering["sensors"]]
+        for sensor in sensors:
+            logger.debug("Acquiring lock for {}.".format(sensor.name))
+            sensor.lock.acquire()
+
+        if (not "heights" in metering) or test:
+            self._record_sensors_threaded(metering["sensors"], test=test)
+        else:
+            logger.debug("Acquiring lift lock.")
+            self.lift.lock.acquire()
+            self.lift.connect()
+
+            for height in metering["heights"]:
+                # TODO: implement heights for lift
+                logger.debug("Moving to {}m height".format(height))
+                self.lift.move(255)
+                self._record_sensors_threaded(metering["sensors"], test=test)
+
+            self.lift.disconnect()
+            self.lift.lock.release()
+
+        for sensor in sensors:
+            logger.debug("Releasing lock for {}.".format(sensor.name))
+            sensor.lock.release()
+
+    def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
+        meter_threads = []
+
+        for name, params in sensors.items():
+            sensor = self.sensors[name]
+            t = threading.Thread(target=self._record_sensor,
+                                 args=[sensor, params, test])
+            t.sensor = sensor
+            meter_threads.append(t)
+            t.start()
+
+        for t in meter_threads:
+            logger.debug("Waiting for {} to finish...".format(t.sensor.name))
+            t.join()
+
+    def _record_sensor(self, sensor: sensorproxy.sensors.base.Sensor, params: dict, test: bool):
         try:
-            sensor = self.sensors[sensor_name]
+            if (test) and ("duration" in params):
+                params = params.copy()
+                params["duration"] = "1s"
             sensor.record(**params)
         except KeyError:
             logger.error("Sensor '{}' is not defined in config: {}".format(
-                sensor_name, self.config_path))
+                sensor.name, self.config_path))
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
             logger.error(
-                "Sensor '{}' is not available: {}".format(sensor_name, e))
+                "Sensor '{}' is not available: {}".format(sensor.name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
+        # default values for start and end (whole day)
         start = 0
         end = 24 * 60 * 60
-        interval = parse_time(metering["schedule"]["interval"])
 
         if "start" in metering["schedule"]:
             start = parse_time(metering["schedule"]["start"])
         if "end" in metering["schedule"]:
             end = parse_time(metering["schedule"]["end"])
 
+        interval = parse_time(metering["schedule"]["interval"])
+
         logger.info("metering '{}' from {} until {}, every {}".format(
             name, start, end, interval))
 
-        for sensor_name, params in metering["sensors"].items():
-            for day_second in range(start, end, interval):
-                # TODO: remove timezone information here
-                ts = datetime.datetime.fromtimestamp(day_second)
-                time = ts.time()
+        for day_second in range(start, end, interval):
+            # TODO: remove timezone information here
+            ts = datetime.datetime.fromtimestamp(day_second)
+            time = ts.time()
 
-                s = schedule.every().day
-                s.at_time = time
-                s.do(run_threaded, self._meter, sensor_name, params)
-
-                logger.debug("scheduled '{}', next run: {}".format(
-                    sensor_name, s.next_run))
+            s = schedule.every().day
+            s.at_time = time
+            s.do(run_threaded, self._run_metering, metering)
 
     def run(self):
         for name, metering in self.meterings.items():

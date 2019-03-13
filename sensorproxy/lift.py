@@ -1,6 +1,7 @@
 import socket
 import time
 import logging
+import threading
 
 import RPi.GPIO as gpio
 
@@ -79,6 +80,7 @@ class Lift:
         self.time_down_s = None
         self._current_speed = None
         self._last_response_ts = None
+        self.lock = threading.Lock()
 
         gpio.setmode(gpio.BCM)
         gpio.setup(hall_bottom_pin, gpio.IN)

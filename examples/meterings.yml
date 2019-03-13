@@ -10,6 +10,7 @@ daytime:              # name of the measuring cycle
     interval: 30m           # measurement is mandatory (max. 24h)
     start: 06h              # optional, according to local time
     end: 22h                # optional, according to local time
+  heights: [0, 5]         # heights in meter
 
 ongoing:
   sensors:
