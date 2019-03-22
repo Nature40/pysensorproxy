@@ -21,7 +21,6 @@ class RsyncSender:
         self.destination = destination
 
         self.wifi = WiFi(ssid, psk)
-        schedule.every().day.at(start_time).do(self.sync)
 
     def _rsync_cmd(self, dry):
         cmd = ["rsync", "-avz", "--remove-source-files"]

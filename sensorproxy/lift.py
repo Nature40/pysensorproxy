@@ -43,15 +43,17 @@ class ResponseTimeoutException(LiftConnectionException):
 class Lift:
     """Class representing a lift and its configuration."""
 
-    def __init__(self, mgr, ssid, psk, hall_bottom_pin, hall_top_pin, ip="192.168.3.254", port=35037, update_interval_s=0.05, timeout_s=0.5):
+    def __init__(self, mgr: WiFiManager, height: float, ssid: str, psk: str = "supersicher", hall_bottom_pin: int = 5, hall_top_pin: int = 6, ip: str = "192.168.3.254", port: int = 35037, update_interval_s: float = 0.05, timeout_s: float = 0.5):
         """
         Args:
             mgr (WiFiManager): WiFi manager to be used to connect
+            height (float): Highest point the lift can reach, used for calibration
             ssid (str): WiFi SSID of the LiftSystem
             psk (str): WiFi pre-shared key of the LiftSystem
             hall_bottom_pin (int): GPIO pin of the bottom hall sensor
             hall_top_pin (int): GPIO pin of the top hall sensor
             ip (str): IP address of the LiftSystem
+            port (int): server port of the LiftSystem
             update_interval_s (float): interval between lift speed updates
             timeout_s (float): speed commands timeout configured on the LiftSystem
 
@@ -61,27 +63,35 @@ class Lift:
             itself, moving to the bottom, then to the top and back to the bottom 
             to measure the travel time. 
 
-            >>> l = Lift(None, "nature40.liftsystem.abcd", "supersicher", 5, 6)
+            >>> l = Lift(None, 12.6, "nature40.liftsystem.1337")
             >>> l.calibrate()
         """
 
+        # mandatory parameters
         self.mgr = mgr
-        self.ip = ip
-        self.port = port
+        self.height = height
+        self.wifi = WiFi(ssid, psk)
+
+        # optional (defaultable parameters)
         self.hall_bottom_pin = hall_bottom_pin
         self.hall_top_pin = hall_top_pin
+        self.ip = ip
+        self.port = port
         self.update_interval_s = update_interval_s
         self.timeout_s = timeout_s
 
-        self.wifi = WiFi(ssid, psk)
-        self.sock = None
+        # calibration variables
+        self._time_up_s = None
+        self._time_down_s = None
+        self._current_height_m = None
 
-        self.time_up_s = None
-        self.time_down_s = None
+        # runtime variables
+        self.lock = threading.Lock()
+        self._sock = None
         self._current_speed = None
         self._last_response_ts = None
-        self.lock = threading.Lock()
 
+        # gpio initialization
         gpio.setmode(gpio.BCM)
         gpio.setup(hall_bottom_pin, gpio.IN)
         gpio.setup(hall_top_pin, gpio.IN)
@@ -89,11 +99,12 @@ class Lift:
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
 
-    def connect(self, dry=False, timeout=10):
+    def connect(self, dry: bool = False, timeout_s: float = 10):
         """Connect to the configured lift.
 
         Args:
-            dry (bool): Don't connect to configured WiFi.
+            dry (bool): don't connect to configured WiFi
+            timeout (float): timeout for connection attempts
 
         Raises:
             LiftSocketCommunicationException: if no response from lift on initial connect
@@ -105,29 +116,29 @@ class Lift:
         else:
             logger.info("wifi is handled externally")
 
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.sock.setblocking(False)
+        self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._sock.setblocking(False)
 
         self._send_speed(0)
 
         start_ts = time.time()
         while self._current_speed == None:
-            if start_ts + timeout < time.time():
+            if start_ts + timeout_s < time.time():
                 raise LiftSocketCommunicationException(
-                    "No response in {}s from lift in initial connect".format(timeout))
+                    "No response in {}s from lift in initial connect".format(timeout_s))
             self._recv_responses()
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
-    def disconnect(self, dry=False):
+    def disconnect(self, dry: bool = False):
         """Disconnect from the configured lift.
 
         dry (bool): Don't disconnect from configured WiFi.
         """
 
         logger.info("disconnecting from lift")
-        self.sock.close()
-        self.sock = None
+        self._sock.close()
+        self._sock = None
 
         if self.mgr and not dry:
             self.mgr.disconnect()
@@ -155,9 +166,11 @@ class Lift:
         """
 
         if speed > 0 and self.hall_top:
+            self._current_height_m = self.height
             raise MovingException("cannot move upwards, reached sensor.")
 
         if speed < 0 and self.hall_bottom:
+            self._current_height_m = 0.0
             raise MovingException("cannot move downwards, reached sensor.")
 
     def _check_timeout(self):
@@ -183,7 +196,7 @@ class Lift:
             LiftSocketCommunicationException: If the speed command could not be send.
         """
 
-        if not self.sock:
+        if not self._sock:
             raise LiftConnectionException("not connected to a lift")
 
         self._check_limits(speed)
@@ -191,7 +204,7 @@ class Lift:
         logger.debug("sending speed {}".format(speed))
         request = "speed {}".format(speed).encode()
         try:
-            self.sock.sendto(request, (self.ip, self.port))
+            self._sock.sendto(request, (self.ip, self.port))
         except OSError as e:
             raise LiftSocketCommunicationException(
                 "Sending speed failed: {}".format(e))
@@ -204,12 +217,12 @@ class Lift:
             UnknownReponseException: If the response is unknown.
         """
 
-        if not self.sock:
+        if not self._sock:
             raise LiftConnectionException("not connected to a lift")
 
         while True:
             try:
-                response = self.sock.recvfrom(65565)[0].decode()
+                response = self._sock.recvfrom(65565)[0].decode()
                 self._last_response_ts = time.time()
             except BlockingIOError:
                 return
@@ -223,20 +236,32 @@ class Lift:
             else:
                 raise UnknownReponseException("Response: '{}'".format(cmd))
 
-    def move(self, speed: int):
-        """Move the lift with the given speed until the top or bottom is reached.
+    def _move(self, speed: int, time_s: float = 300.0):
+        """Move the lift for a period of time with a provided speed until the top or bottom is reached.
 
         Args:
             speed (int): speed to move the lift with, (-255, 255)
+            time_s (float): period of time the lift shall move
 
         Returns:
-            float: Time the lift moved until the end was reached.
+            float: Time duration the lift moved.
         """
 
-        logger.info("moving lift with speed {}".format(speed))
+        logger.info(
+            "moving lift with speed {} for max {}s".format(speed, time_s))
         ride_start_ts = time.time()
 
         while True:
+            if ride_start_ts + time_s < time.time():
+                if speed == 0:
+                    logger.info("Lift stopping finished.")
+                    return time.time() - ride_start_ts
+                else:
+                    logger.info("Lift moved for {}s, stopping.".format(time_s))
+                    ride_stop_ts = time.time()
+                    self._move(0, 1)
+                    return ride_stop_ts - ride_start_ts
+
             try:
                 self._send_speed(speed)
                 self._recv_responses()
@@ -246,28 +271,79 @@ class Lift:
                 logger.warn("Lift command exception: {}".format(e))
 
             except MovingException as e:
-                ride_end_ts = time.time()
-                travel_time_s = ride_end_ts - ride_start_ts
-                logger.info("end reached in {}s".format(travel_time_s))
-                break
+                logger.info("Lift reached end, stopping.")
+                ride_stop_ts = time.time()
+                self._move(0, 1)
+                return ride_stop_ts - ride_start_ts
 
             time.sleep(self.update_interval_s)
 
-        return travel_time_s
+    def move_to(self, height_request: float):
+        if self._current_height_m == None:
+            logger.error("Lift is not calibrated yet, starting calibration!")
+            self.calibrate()
+
+        # location is already reached
+        if self._current_height_m == height_request:
+            logger.info("Lift is already at {}m.".format(height_request))
+            return
+
+        # extremes: move all the way up or down
+        # _current_height_m doesn't net to be set, as the hall sensor checks set these values
+        if height_request >= self.height:
+            logger.info("Requested height is high ({}m >= {}m maximum), moving to the top.".format(
+                height_request, self.height))
+            self._move(255)
+            return
+        elif height_request <= 0.0:
+            logger.info("Request height is low ({}m <= 0m), moving to the bottom.".format(
+                height_request))
+            self._move(-255)
+            return
+
+        # compute travel distance and duration
+        travel_distance_m = height_request - self._current_height_m
+        if travel_distance_m < 0:
+            travel_speed_mps = self.height / self._time_down_s
+            motor_speed = -255
+        else:
+            travel_speed_mps = self.height / self._time_up_s
+            motor_speed = 255
+
+        travel_duration_s = travel_distance_m / travel_speed_mps
+
+        # move the lift
+        logger.info("Moving lift by {}m to reach {}m: moving {}s with speed {} m/s".format(
+            travel_distance_m, height_request, travel_duration_s, travel_speed_mps))
+        travel_duration_s = self._move(motor_speed, travel_duration_s)
+
+        # set the reached height
+        logger.debug("Reached height {}m after {}s".format(
+            height_request, travel_duration_s))
+        self._current_height_m = height_request
 
     def calibrate(self):
         """Calibrate the lift travel times, by moving fully up and back down."""
 
-        logger.info("calibrating lift, starting at the bottom")
-        self.move(-255)
+        logger.info("Starting lift calibration program")
+        logger.info(
+            "moving up (1 second steps) and back down to start in defined state.")
+        while self.hall_bottom:
+            self._move(255, 1)
+        self._move(-255)
 
         logger.info("moving lift to top")
-        self.time_up_s = self.move(255)
+        self._time_up_s = self._move(255)
         logger.info("goint back to bottom")
-        self.time_down_s = self.move(-255)
+        self._time_down_s = self._move(-255)
 
         logger.info("calibration finished, {}s to the top, {}s back to bottom".format(
-            self.time_up_s, self.time_down_s))
+            self._time_up_s, self._time_down_s))
+
+        travel_speed_up = self.height / self._time_up_s
+        travel_speed_down = self.height / self._time_down_s
+        logger.info(
+            "lift speeds: {} m/s up, {} m/s down".format(travel_speed_up, travel_speed_down))
 
 
 if __name__ == "__main__":
@@ -282,15 +358,7 @@ if __name__ == "__main__":
     mgr = None
     mgr = WiFiManager(interface="wlan0")
 
-    lift = Lift(
-        mgr=mgr,
-        ssid="nature40.liftsystem.34a4",
-        psk="supersicher",
-        ip="192.168.3.254",
-        port=35037,
-        hall_bottom_pin=5,
-        hall_top_pin=6,
-        update_interval_s=0.1)
+    lift = Lift(mgr=mgr, height=30, ssid="nature40.liftsystem.34a4")
 
     try:
         lift.connect()

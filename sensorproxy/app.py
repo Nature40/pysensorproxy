@@ -123,8 +123,8 @@ class SensorProxy:
             self.lift.disconnect()
             return
 
-        logger.info("Moving Lift down")
-        self.lift.move(-255)
+        logger.info("Calibrating Lift")
+        self.lift.calibrate()
         self.lift.disconnect()
 
     def test_interactive(self):
@@ -164,32 +164,49 @@ class SensorProxy:
     def _test_metering(self):
         for name, metering in self.meterings.items():
             logger.debug("Testing metering '{}'".format(name))
-            self._run_metering(metering, test=True)
+            self._run_metering(name, metering, test=True)
 
-    def _run_metering(self, metering, test=False):
+    def _run_metering(self, name, metering, test=False):
+        logger.info("Running metering {}".format(name))
+
         sensors = [self.sensors[name] for name in metering["sensors"]]
         for sensor in sensors:
-            logger.debug("Acquiring lock for {}.".format(sensor.name))
+            logger.debug("Requesting access to {}.".format(sensor.name))
             sensor.lock.acquire()
+            logger.debug("Got access to {}.".format(sensor.name))
 
         if (not "heights" in metering) or test:
             self._record_sensors_threaded(metering["sensors"], test=test)
         else:
-            logger.debug("Acquiring lift lock.")
+            logger.debug("Requesting lift access.")
             self.lift.lock.acquire()
-            self.lift.connect()
+            logger.debug("Got lift access.")
+            try:
+                self.lift.connect()
+            except sensorproxy.wifi.WiFiConnectionError as e:
+                logger.error("Couldn't connect to lift wifi: {}".format(e))
+                return
+            except LiftSocketCommunicationException as e:
+                logger.error("Couldn't connect to lift: {}".format(e))
+                self.lift.disconnect()
+                return
 
             for height in metering["heights"]:
-                # TODO: implement heights for lift
-                logger.debug("Moving to {}m height".format(height))
-                self.lift.move(255)
-                self._record_sensors_threaded(metering["sensors"], test=test)
+                logger.info(
+                    "Running metering {} at {}m.".format(name, height))
+                self.lift.move_to(height)
+                self._record_sensors_threaded(
+                    metering["sensors"], test=test)
 
+            logger.info(
+                "Metering {} is done, moving back to bottom.".format(name))
+            self.lift.move_to(0.0)
             self.lift.disconnect()
+            logger.debug("Releasing lift access.")
             self.lift.lock.release()
 
         for sensor in sensors:
-            logger.debug("Releasing lock for {}.".format(sensor.name))
+            logger.debug("Releasing access to {}.".format(sensor.name))
             sensor.lock.release()
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
@@ -242,7 +259,7 @@ class SensorProxy:
 
             s = schedule.every().day
             s.at_time = time
-            s.do(run_threaded, self._run_metering, metering)
+            s.do(run_threaded, self._run_metering, name, metering)
 
     def run(self):
         for name, metering in self.meterings.items():
@@ -267,7 +284,7 @@ def setup_logging(level):
 
     main_logger = logging.getLogger("sensorproxy")
     main_logger.addHandler(stderr_handler)
-    main_logger.setLevel(level)
+    main_logger.setLevel(logging_level)
 
     if level > 3:
         logger.warn("Logging level cannot be increased further.")

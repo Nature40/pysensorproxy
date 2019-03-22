@@ -105,6 +105,7 @@ class WiFiManager:
         self.host_ap = host_ap
 
         self.wpa_supplicant = None
+        self.start_ap()
 
     def start_ap(self):
         if self.wpa_supplicant is not None:

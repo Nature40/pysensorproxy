@@ -55,9 +55,9 @@ class TSL2561(LogSensor):
         logger.debug("Reading TSL2561 sensor via i2c")
 
         try:
-            tsl2561 = tsl2561.TSL2561()
-            broadband, ir = tsl2561._get_luminosity()
-            lux = tsl2561._calculate_lux(broadband, ir)
+            lux_sensor = tsl2561.TSL2561()
+            broadband, ir = lux_sensor._get_luminosity()
+            lux = lux_sensor._calculate_lux(broadband, ir)
         except OSError as e:
             raise SensorNotAvailableException(e)
 

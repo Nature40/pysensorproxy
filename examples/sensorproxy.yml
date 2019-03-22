@@ -27,10 +27,8 @@ wifi:                             # wifi properties to be configured
   host_ap: true                   # open an access point if there is no outbounding connection
 
 lift:                             # lift configuration
-  ssid: nature40.liftsystem.34a4
-  psk: supersicher
-  hall_bottom_pin: 5
-  hall_top_pin: 6
+  ssid: nature40.liftsystem.709e
+  height: 30
 
 # rsync connects to the configured WiFi and syncs it's storage.
 # NOTE:
