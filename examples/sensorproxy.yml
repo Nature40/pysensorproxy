@@ -16,10 +16,10 @@ sensors:                          # list of sensors
     type: PiCamera
     img_format: jpeg
 
-storage_path: /pysensorproxy/data      # path to save files
+storage_path: /data      # path to save files
 
 log:
-  level: warn                       # choose: critical, error, warning, info, debug, notset
+  level: info                       # choose: critical, error, warning, info, debug, notset
   file_name: sensorproxy.txt
 
 wifi:                             # wifi properties to be configured
