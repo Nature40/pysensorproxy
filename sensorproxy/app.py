@@ -175,7 +175,7 @@ class SensorProxy:
             sensor.lock.acquire()
             logger.debug("Got access to {}.".format(sensor.name))
 
-        if (not "heights" in metering) or test:
+        if (not "heights" in metering) or (not self.lift) or test:
             self._record_sensors_threaded(metering["sensors"], test=test)
         else:
             logger.debug("Requesting lift access.")
