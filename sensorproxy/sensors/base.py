@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class Sensor:
     """Abstract sensor class"""
 
-    def __init__(self, name, storage_path, **kwargs):
+    def __init__(self, name: str, storage_path: str, **kwargs):
         """
         Args:
             name (str): given name of the sensor
@@ -27,7 +27,7 @@ class Sensor:
         super().__init__()
 
     @abstractmethod
-    def record(self, *args, dry=False, **kwargs):
+    def record(self, *args, dry: bool = False, **kwargs):
         """Read the sensor and write the value.
 
         Args:
@@ -72,7 +72,7 @@ class LogSensor(Sensor):
 
         pass
 
-    def record(self, *args, dry=False, **kwargs):
+    def record(self, *args, dry: bool = False, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
 
@@ -95,7 +95,7 @@ class LogSensor(Sensor):
 class FileSensor(Sensor):
     """Class for sensors logging more complex data to binary files."""
 
-    def __init__(self, file_ext, *args, **kwargs):
+    def __init__(self, file_ext: str, *args, **kwargs):
         """
         Args:
             file_ext (str): log file extension
@@ -119,7 +119,7 @@ class FileSensor(Sensor):
         return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
 
     @abstractmethod
-    def _read(self, file_path, *args, **kwargs):
+    def _read(self, file_path: str, *args, **kwargs):
         """Read the sensor.
 
         Args:
@@ -128,7 +128,7 @@ class FileSensor(Sensor):
 
         pass
 
-    def record(self, *args, dry=False, **kwargs):
+    def record(self, *args, dry: bool = False, **kwargs):
         file_path = self.file_path
 
         if dry:

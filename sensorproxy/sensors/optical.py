@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class PiCamera(FileSensor):
-    def __init__(self, *args, img_format, **kwargs):
+    def __init__(self, *args, img_format: str, **kwargs):
         super().__init__(img_format, *args, **kwargs)
 
         global picamera
@@ -18,7 +18,7 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def _read(self, file_path, res_X, res_Y, adjust_time):
+    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str):
         adjust_time_s = parse_time(adjust_time)
 
         logger.debug("Reading PiCamera with {}x{} for {}s".format(

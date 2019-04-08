@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class AM2302(LogSensor):
-    def __init__(self, *args, pin, **kwargs):
+    def __init__(self, *args, pin: int, **kwargs):
         super().__init__(*args, **kwargs)
 
         global Adafruit_DHT

@@ -13,7 +13,7 @@ AUDIO_FORMATS = ["wav", "flac"]
 
 @register_sensor
 class Microphone(FileSensor):
-    def __init__(self, *args, audio_format, card, device, sample_format, rate, level, **kwargs):
+    def __init__(self, *args, audio_format: str, card: int, device: int, sample_format: str, rate: int, level: str, **kwargs):
         if audio_format not in AUDIO_FORMATS:
             logger.error("Microphone sample format '{}' is not available, defaulting to 'wav'.".format(
                 self.file_ext))
@@ -33,7 +33,7 @@ class Microphone(FileSensor):
             logger.error(
                 "Microphone configuration error (continuing): {}".format(e))
 
-    def _set_volume(self, level):
+    def _set_volume(self, level: str):
         cmd = [
             "amixer",
             "-c", str(self.card),
@@ -52,7 +52,7 @@ class Microphone(FileSensor):
             raise SensorConfigurationException(
                 "amixer returned {}: {}".format(p.returncode, stderr.decode()))
 
-    def _read(self, file_path, duration):
+    def _read(self, file_path: str, duration: str):
         device_name = "hw:{},{}".format(self.card, self.device)
         duration_s = parse_time(duration)
 
