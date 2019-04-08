@@ -19,7 +19,7 @@ import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
 import sensorproxy.sensors.optical
 from sensorproxy.wifi import WiFiManager
-from sensorproxy.lift import Lift, LiftSocketCommunicationException
+from sensorproxy.lift import Lift
 from sensorproxy.rsync import RsyncSender, RsyncException
 
 
@@ -118,7 +118,7 @@ class SensorProxy:
         except sensorproxy.wifi.WiFiConnectionError as e:
             logger.error("Couldn't connect to lift wifi: {}".format(e))
             return
-        except LiftSocketCommunicationException as e:
+        except sensorproxy.lift.LiftConnectionException as e:
             logger.error("Couldn't connect to lift: {}".format(e))
             self.lift.disconnect()
             return
@@ -175,35 +175,33 @@ class SensorProxy:
             sensor.lock.acquire()
             logger.debug("Got access to {}.".format(sensor.name))
 
-        if (not "heights" in metering) or (not self.lift) or test:
+        if (not "heights" in metering) or (self.lift == None) or test:
             self._record_sensors_threaded(metering["sensors"], test=test)
         else:
-            logger.debug("Requesting lift access.")
-            self.lift.lock.acquire()
-            logger.debug("Got lift access.")
+
             try:
                 self.lift.connect()
+
+                for height in metering["heights"]:
+                    logger.info(
+                        "Running metering {} at {}m.".format(name, height))
+                    self.lift.move_to(height)
+                    self._record_sensors_threaded(
+                        metering["sensors"], test=test)
+
+                logger.info(
+                    "Metering {} is done, moving back to bottom.".format(name))
+                self.lift.move_to(0.0)
+                self.lift.disconnect()
+
             except sensorproxy.wifi.WiFiConnectionError as e:
                 logger.error("Couldn't connect to lift wifi: {}".format(e))
-                return
-            except LiftSocketCommunicationException as e:
-                logger.error("Couldn't connect to lift: {}".format(e))
+                self._record_sensors_threaded(metering["sensors"], test=test)
+
+            except sensorproxy.lift.LiftConnectionException as e:
+                logger.error("Error in lift connection: {}".format(e))
                 self.lift.disconnect()
-                return
-
-            for height in metering["heights"]:
-                logger.info(
-                    "Running metering {} at {}m.".format(name, height))
-                self.lift.move_to(height)
-                self._record_sensors_threaded(
-                    metering["sensors"], test=test)
-
-            logger.info(
-                "Metering {} is done, moving back to bottom.".format(name))
-            self.lift.move_to(0.0)
-            self.lift.disconnect()
-            logger.debug("Releasing lift access.")
-            self.lift.lock.release()
+                self._record_sensors_threaded(metering["sensors"], test=test)
 
         for sensor in sensors:
             logger.debug("Releasing access to {}.".format(sensor.name))

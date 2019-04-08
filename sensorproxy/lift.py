@@ -10,7 +10,7 @@ from sensorproxy.wifi import WiFi, WiFiManager
 logger = logging.getLogger(__name__)
 
 
-class MovingException(Exception):
+class _MovingException(Exception):
     """Exception: lift cannot move further in the requested direction."""
     pass
 
@@ -20,22 +20,17 @@ class LiftConnectionException(Exception):
     pass
 
 
-class UnknownReponseException(LiftConnectionException):
+class _UnknownReponseException(LiftConnectionException):
     """Exception: unknown response from a lift."""
     pass
 
 
-class WrongSpeedResponseException(LiftConnectionException):
-    """Exception: wrong speed returned by the lift."""
-    pass
-
-
-class LiftSocketCommunicationException(LiftConnectionException):
+class _LiftSocketCommunicationException(LiftConnectionException):
     """Exception: socket error occured while communicating with the lift."""
     pass
 
 
-class ResponseTimeoutException(LiftConnectionException):
+class _ResponseTimeoutException(LiftConnectionException):
     """Exception: no response from the lift for defined time."""
     pass
 
@@ -110,6 +105,9 @@ class Lift:
             LiftSocketCommunicationException: if no response from lift on initial connect
         """
 
+        logger.debug("Requesting lift access.")
+        self.lock.acquire()
+
         if self.mgr and not dry:
             logger.info("connecting to '{}'".format(self.wifi.ssid))
             self.mgr.connect(self.wifi)
@@ -124,7 +122,7 @@ class Lift:
         start_ts = time.time()
         while self._current_speed == None:
             if start_ts + timeout_s < time.time():
-                raise LiftSocketCommunicationException(
+                raise _LiftSocketCommunicationException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
             self._recv_responses()
 
@@ -142,6 +140,9 @@ class Lift:
 
         if self.mgr and not dry:
             self.mgr.disconnect()
+
+        logger.debug("Releasing lift access.")
+        self.lock.release()
 
     @property
     def hall_bottom(self):
@@ -167,11 +168,11 @@ class Lift:
 
         if speed > 0 and self.hall_top:
             self._current_height_m = self.height
-            raise MovingException("cannot move upwards, reached sensor.")
+            raise _MovingException("cannot move upwards, reached sensor.")
 
         if speed < 0 and self.hall_bottom:
             self._current_height_m = 0.0
-            raise MovingException("cannot move downwards, reached sensor.")
+            raise _MovingException("cannot move downwards, reached sensor.")
 
     def _check_timeout(self):
         """Check if the lift has timed out.
@@ -182,7 +183,7 @@ class Lift:
 
         delay = time.time() - self._last_response_ts
         if delay > self.timeout_s:
-            raise ResponseTimeoutException(
+            raise _ResponseTimeoutException(
                 "No response since {} s.".format(delay))
 
     def _send_speed(self, speed: int):
@@ -206,7 +207,7 @@ class Lift:
         try:
             self._sock.sendto(request, (self.ip, self.port))
         except OSError as e:
-            raise LiftSocketCommunicationException(
+            raise _LiftSocketCommunicationException(
                 "Sending speed failed: {}".format(e))
 
     def _recv_responses(self):
@@ -234,7 +235,7 @@ class Lift:
                 speed_response = int(speed_response_str)
                 self._current_speed = speed_response
             else:
-                raise UnknownReponseException("Response: '{}'".format(cmd))
+                raise _UnknownReponseException("Response: '{}'".format(cmd))
 
     def _move(self, speed: int, time_s: float = 300.0):
         """Move the lift for a period of time with a provided speed until the top or bottom is reached.
@@ -270,7 +271,7 @@ class Lift:
             except LiftConnectionException as e:
                 logger.warn("Lift command exception: {}".format(e))
 
-            except MovingException as e:
+            except _MovingException as e:
                 logger.info("Lift reached end, stopping.")
                 ride_stop_ts = time.time()
                 self._move(0, 1)
