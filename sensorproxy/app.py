@@ -40,7 +40,7 @@ class SensorProxy:
 
         logger.info("loading config file '{}'".format(config_path))
         with open(config_path) as config_file:
-            config = yaml.load(config_file)
+            config = yaml.load(config_file, Loader=yaml.BaseLoader)
 
         self._init_storage(**config)
         self._init_logging(**config["log"])
@@ -49,7 +49,7 @@ class SensorProxy:
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
-            self.meterings = yaml.load(metering_file)
+            self.meterings = yaml.load(metering_file, Loader=yaml.BaseLoader)
 
         self._test_metering()
 
