@@ -176,6 +176,7 @@ class SensorProxy:
             logger.debug("Got access to {}.".format(sensor.name))
 
         if (not "heights" in metering) or (self.lift == None) or test:
+            height = self.lift._current_height_m if self.lift else None
             self._record_sensors_threaded(metering["sensors"], test=test)
         else:
 
@@ -209,11 +210,12 @@ class SensorProxy:
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
         meter_threads = []
+        height = self.lift._current_height_m if self.lift else None
 
         for name, params in sensors.items():
             sensor = self.sensors[name]
             t = threading.Thread(target=self._record_sensor,
-                                 args=[sensor, params, test])
+                                 args=[sensor, params, test, height])
             t.sensor = sensor
             meter_threads.append(t)
             t.start()
@@ -222,12 +224,12 @@ class SensorProxy:
             logger.debug("Waiting for {} to finish...".format(t.sensor.name))
             t.join()
 
-    def _record_sensor(self, sensor: sensorproxy.sensors.base.Sensor, params: dict, test: bool):
+    def _record_sensor(self, sensor: sensorproxy.sensors.base.Sensor, params: dict, test: bool, height_m: float):
         try:
             if (test) and ("duration" in params):
                 params = params.copy()
                 params["duration"] = "1s"
-            sensor.record(**params)
+            sensor.record(dry=test, height_m=height_m, **params)
         except KeyError:
             logger.error("Sensor '{}' is not defined in config: {}".format(
                 sensor.name, self.config_path))

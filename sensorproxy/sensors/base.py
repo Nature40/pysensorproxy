@@ -27,7 +27,7 @@ class Sensor:
         super().__init__()
 
     @abstractmethod
-    def record(self, *args, dry: bool = False, **kwargs):
+    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
         """Read the sensor and write the value.
 
         Args:
@@ -72,14 +72,14 @@ class LogSensor(Sensor):
 
         pass
 
-    def record(self, *args, dry: bool = False, **kwargs):
+    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
 
         if not dry:
             with open(self.file_path, "a") as file:
                 writer = csv.writer(file)
-                writer.writerow([ts] + reading)
+                writer.writerow([ts, height_m] + reading)
 
         return self.file_path
 
@@ -89,7 +89,7 @@ class LogSensor(Sensor):
 
         with open(self.file_path, "a") as file:
             writer = csv.writer(file)
-            writer.writerow(["Timestamp"] + self._header)
+            writer.writerow(["Time", "Height (m)"] + self._header)
 
 
 class FileSensor(Sensor):
@@ -105,18 +105,14 @@ class FileSensor(Sensor):
         self.file_ext = file_ext
         self.records = []
 
-    @property
-    def file_path(self):
+    def file_path(self, dry: bool = False, height_m: float = None):
         """Generated file path for a sensor reading."""
 
-        return os.path.join(self.storage_path, "{}_{}.{}".format(
-            Sensor.time_repr(), self.name, self.file_ext))
+        if dry:
+            return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
 
-    @property
-    def file_path_dry(self):
-        """Generated dummy file path for dry readings."""
-
-        return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
+        return os.path.join(self.storage_path, "{}_{}m_{}.{}".format(
+            Sensor.time_repr(), height_m, self.name, self.file_ext))
 
     @abstractmethod
     def _read(self, file_path: str, *args, **kwargs):
@@ -128,11 +124,8 @@ class FileSensor(Sensor):
 
         pass
 
-    def record(self, *args, dry: bool = False, **kwargs):
-        file_path = self.file_path
-
-        if dry:
-            file_path = self.file_path_dry
+    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
+        file_path = self.file_path(height_m=height_m, dry=dry)
 
         self._read(file_path, *args, **kwargs)
 
