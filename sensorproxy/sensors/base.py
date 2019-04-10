@@ -36,9 +36,13 @@ class Sensor:
 
         pass
 
+    @abstractmethod
     def refresh(self):
         """Refresh the sensor, e.g. creating a new file."""
+        pass
 
+    @abstractmethod
+    def get_file_path(self):
         pass
 
     @staticmethod
@@ -72,24 +76,29 @@ class LogSensor(Sensor):
 
         pass
 
+    def get_file_path(self):
+        return self.__file_path
+
+    def refresh(self):
+        self.__file_path = os.path.join(
+            self.storage_path, "{}_{}.csv".format(Sensor.time_repr(), self.name)
+        )
+
+        with open(self.get_file_path(), "a") as file:
+            writer = csv.writer(file)
+            writer.writerow(["Time", "Height (m)"] + self._header)
+
     def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
+        file_path = self.get_file_path()
 
         if not dry:
-            with open(self.file_path, "a") as file:
+            with open(file_path, "a") as file:
                 writer = csv.writer(file)
                 writer.writerow([ts, height_m] + reading)
 
-        return self.file_path
-
-    def refresh(self):
-        self.file_path = os.path.join(self.storage_path, "{}_{}.csv".format(
-            Sensor.time_repr(), self.name))
-
-        with open(self.file_path, "a") as file:
-            writer = csv.writer(file)
-            writer.writerow(["Time", "Height (m)"] + self._header)
+        return file_path
 
 
 class FileSensor(Sensor):
@@ -105,14 +114,18 @@ class FileSensor(Sensor):
         self.file_ext = file_ext
         self.records = []
 
-    def file_path(self, dry: bool = False, height_m: float = None):
+    def get_file_path(self, dry: bool = False, height_m: float = None):
         """Generated file path for a sensor reading."""
 
         if dry:
             return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
 
-        return os.path.join(self.storage_path, "{}_{}m_{}.{}".format(
-            Sensor.time_repr(), height_m, self.name, self.file_ext))
+        return os.path.join(
+            self.storage_path,
+            "{}_{}m_{}.{}".format(
+                Sensor.time_repr(), height_m, self.name, self.file_ext
+            ),
+        )
 
     @abstractmethod
     def _read(self, file_path: str, *args, **kwargs):
@@ -125,7 +138,7 @@ class FileSensor(Sensor):
         pass
 
     def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
-        file_path = self.file_path(height_m=height_m, dry=dry)
+        file_path = self.get_file_path(height_m=height_m, dry=dry)
 
         self._read(file_path, *args, **kwargs)
 
@@ -148,9 +161,11 @@ def register_sensor(cls: Type[Sensor]):
 
 class SensorNotAvailableException(Exception):
     """Exception: cannot read sensor."""
+
     pass
 
 
 class SensorConfigurationException(Exception):
     """Exception: configuration of the sensor doesn't work."""
+
     pass
