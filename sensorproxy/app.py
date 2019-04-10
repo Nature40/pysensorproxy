@@ -35,7 +35,7 @@ class SensorProxy:
     class Metering:
         pass
 
-    def __init__(self, config_path, metering_path):
+    def __init__(self, config_path, metering_path, test=False):
         self.config_path = config_path
 
         logger.info("loading config file '{}'".format(config_path))
@@ -53,7 +53,8 @@ class SensorProxy:
 
         self._test_metering()
 
-        self._reset_lift()
+        if not test:
+            self._reset_lift()
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path
@@ -75,11 +76,13 @@ class SensorProxy:
         except KeyError:
             logging_level = logging.INFO
             logger.warn(
-                "'{}' is no valid logging level, defaulting to 'info'".format(level))
+                "'{}' is no valid logging level, defaulting to 'info'".format(level)
+            )
 
         # create logfile
         logfile_formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
         logfile_handler = logging.FileHandler(logfile_path)
         logfile_handler.setLevel(logging_level)
         logfile_handler.setFormatter(logfile_formatter)
@@ -133,30 +136,36 @@ class SensorProxy:
     def _test_hall_interactive(self):
         if not self.lift:
             logger.info(
-                "Interactive hall sensor test: no lift configured, skipping test.")
+                "Interactive hall sensor test: no lift configured, skipping test."
+            )
             return
 
         logger.info(
-            "Interactive hall sensor test: approach with a magnet to trigger 1, remove magnet to trigger 0")
+            "Interactive hall sensor test: approach with a magnet to trigger 1, remove magnet to trigger 0"
+        )
 
         while self.lift.hall_bottom == 0:
             logger.warn(
-                "Interactive hall sensor test (1/4):  bottom sensor reads 0, approach with a magnet...")
+                "Interactive hall sensor test (1/4):  bottom sensor reads 0, approach with a magnet..."
+            )
             time.sleep(1)
 
         while self.lift.hall_bottom == 1:
             logger.warn(
-                "Interactive hall sensor test (2/4): bottom sensor reads 1, remove magnet...")
+                "Interactive hall sensor test (2/4): bottom sensor reads 1, remove magnet..."
+            )
             time.sleep(1)
 
         while self.lift.hall_top == 0:
             logger.warn(
-                "Interactive hall sensor test (3/4): top sensor reads 0, approach with a magnet...")
+                "Interactive hall sensor test (3/4): top sensor reads 0, approach with a magnet..."
+            )
             time.sleep(1)
 
         while self.lift.hall_top == 1:
             logger.warn(
-                "Interactive hall sensor test (4/4): top sensor reads 1, remove magnet...")
+                "Interactive hall sensor test (4/4): top sensor reads 1, remove magnet..."
+            )
             time.sleep(1)
 
         logger.info("Interactive hall sensor test finished.")
@@ -184,14 +193,11 @@ class SensorProxy:
                 self.lift.connect()
 
                 for height in metering["heights"]:
-                    logger.info(
-                        "Running metering {} at {}m.".format(name, height))
+                    logger.info("Running metering {} at {}m.".format(name, height))
                     self.lift.move_to(height)
-                    self._record_sensors_threaded(
-                        metering["sensors"], test=test)
+                    self._record_sensors_threaded(metering["sensors"], test=test)
 
-                logger.info(
-                    "Metering {} is done, moving back to bottom.".format(name))
+                logger.info("Metering {} is done, moving back to bottom.".format(name))
                 self.lift.move_to(0.0)
                 self.lift.disconnect()
 
@@ -214,8 +220,9 @@ class SensorProxy:
 
         for name, params in sensors.items():
             sensor = self.sensors[name]
-            t = threading.Thread(target=self._record_sensor,
-                                 args=[sensor, params, test, height])
+            t = threading.Thread(
+                target=self._record_sensor, args=[sensor, params, test, height]
+            )
             t.sensor = sensor
             meter_threads.append(t)
             t.start()
@@ -224,18 +231,26 @@ class SensorProxy:
             logger.debug("Waiting for {} to finish...".format(t.sensor.name))
             t.join()
 
-    def _record_sensor(self, sensor: sensorproxy.sensors.base.Sensor, params: dict, test: bool, height_m: float):
+    def _record_sensor(
+        self,
+        sensor: sensorproxy.sensors.base.Sensor,
+        params: dict,
+        test: bool,
+        height_m: float,
+    ):
         try:
             if (test) and ("duration" in params):
                 params = params.copy()
                 params["duration"] = "1s"
             sensor.record(dry=test, height_m=height_m, **params)
         except KeyError:
-            logger.error("Sensor '{}' is not defined in config: {}".format(
-                sensor.name, self.config_path))
-        except sensorproxy.sensors.base.SensorNotAvailableException as e:
             logger.error(
-                "Sensor '{}' is not available: {}".format(sensor.name, e))
+                "Sensor '{}' is not defined in config: {}".format(
+                    sensor.name, self.config_path
+                )
+            )
+        except sensorproxy.sensors.base.SensorNotAvailableException as e:
+            logger.error("Sensor '{}' is not available: {}".format(sensor.name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
         # default values for start and end (whole day)
@@ -249,8 +264,11 @@ class SensorProxy:
 
         interval = parse_time(metering["schedule"]["interval"])
 
-        logger.info("metering '{}' from {} until {}, every {}".format(
-            name, start, end, interval))
+        logger.info(
+            "metering '{}' from {} until {}, every {}".format(
+                name, start, end, interval
+            )
+        )
 
         for day_second in range(start, end, interval):
             # TODO: remove timezone information here
@@ -277,8 +295,7 @@ def setup_logging(level):
         logging_level = logging.ERROR - (10 * level)
 
     # create stderr log
-    stderr_formatter = logging.Formatter(
-        '%(name)s - %(levelname)s - %(message)s')
+    stderr_formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(stderr_formatter)
 
@@ -292,21 +309,35 @@ def setup_logging(level):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Read, log, safe and forward sensor readings.')
+        description="Read, log, safe and forward sensor readings."
+    )
     parser.add_argument(
-        "-c", "--config", help="config file (yml)", default="/boot/sensorproxy.yml")
+        "-c", "--config", help="config file (yml)", default="/boot/sensorproxy.yml"
+    )
     parser.add_argument(
-        "-m", "--metering", help="metering protocol (yml)", default="/boot/meterings.yml")
+        "-m",
+        "--metering",
+        help="metering protocol (yml)",
+        default="/boot/meterings.yml",
+    )
     parser.add_argument(
-        "-p", "--port", help="bind port for web interface", default=80, type=int)
+        "-p", "--port", help="bind port for web interface", default=80, type=int
+    )
     parser.add_argument(
-        '-v', '--verbose', help="verbose output", action='count', default=0)
+        "-v", "--verbose", help="verbose output", action="count", default=0
+    )
     parser.add_argument(
-        "-t", "--test", help="only test if sensors are working", action='store_const', const=True, default=False)
+        "-t",
+        "--test",
+        help="only test if sensors are working",
+        action="store_const",
+        const=True,
+        default=False,
+    )
     args = parser.parse_args()
 
     setup_logging(args.verbose)
-    proxy = SensorProxy(args.config, args.metering)
+    proxy = SensorProxy(args.config, args.metering, args.test)
 
     if args.test:
         proxy.test_interactive()
