@@ -38,3 +38,9 @@ class PiCamera(FileSensor):
             raise SensorNotAvailableException(e)
 
         logger.info("image file written to '{}'".format(file_path))
+
+
+@register_sensor
+class PiNoirCamera(PiCamera):
+    def __init__(self, *args, img_format: str, **kwargs):
+        super().__init__(*args, img_format, **kwargs)
