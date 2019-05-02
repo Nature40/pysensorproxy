@@ -15,6 +15,16 @@ sensors:                          # list of sensors
   cam:
     type: PiCamera
     img_format: jpeg
+  influxcsv:
+    type: InfluxSink
+    host: ds.mathematik.uni-marburg.de
+    port: 443
+    ssl: True
+    user: admin
+    password: supersicher
+    db: nature40
+    path: /influx/
+    directory: /data
 
 storage_path: /data               # path to save files
 

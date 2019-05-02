@@ -17,6 +17,7 @@ from pytimeparse import parse as parse_time
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
+import sensorproxy.sensors.influx_sink
 import sensorproxy.sensors.optical
 from sensorproxy.wifi import WiFiManager
 from sensorproxy.lift import Lift

@@ -55,8 +55,11 @@ class Measurement():
 
 
 class InfluxAPI():
-    def __init__(self, url, port, user, passwort, db):
-        self.client = InfluxDBClient(url, port, user, passwort, db)
+    def __init__(self, host, port, user, password, db, path=u'', ssl=False):
+        self.client = InfluxDBClient(
+                host=host, port=port,
+                username=user, password=password, database=db,
+                ssl=ssl, verify_ssl=ssl, path=path)
 
     def __create_json(self, measurement: Measurement):
         """
