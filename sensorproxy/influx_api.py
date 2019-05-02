@@ -1,6 +1,9 @@
-from influxdb import InfluxDBClient
-import os
 import csv
+import os
+
+from influxdb import InfluxDBClient
+from typing import List
+
 
 class WrongFilePath(Exception):
     pass
@@ -10,6 +13,7 @@ class UnCorrectContent(Exception):
 
 class WrongLength(Exception):
     pass
+
 
 class Measurement():
     def __init__(self, box_id: str, sensor: str, timestamp: str, value: float, height: float):
@@ -49,6 +53,7 @@ class Measurement():
     def set_height(self, height: float):
         self.__height = height
 
+
 class InfluxAPI():
     def __init__(self, url, port, user, passwort, db):
         self.client = InfluxDBClient(url, port, user, passwort, db)
@@ -80,7 +85,7 @@ class InfluxAPI():
         self.client.write_points(json_data, time_precision="s", protocol="json")
 
 
-    def __write_list_of_measurements(self, measurements: list<Measurement>):
+    def __write_list_of_measurements(self, measurements: List[Measurement]):
         """
 
         :param measurements: list of all measurements
@@ -120,5 +125,5 @@ class InfluxAPI():
 
 
 if __name__== "__main__":
-        influx = InfluxAPI("10.0.1.60", 8086, "nature40", "nature40", "sensors")
-        influx.submit_file("/Users/lampep/Downloads/2019-03-11T172503_am2302.csv", "test1")
+    influx = InfluxAPI("10.0.1.60", 8086, "nature40", "nature40", "sensors")
+    influx.submit_file("/Users/lampep/Downloads/2019-03-11T172503_am2302.csv", "test1")
