@@ -14,8 +14,9 @@ daytime:              # name of the measuring cycle
 
 ongoing:
   sensors:
-    am2302: {}              # empty config (no parameters possible here)
-    lumen: {}
+    am2302:
+      influx_publish: True   # publish each measurement to the InfluxDB specified in the sensorproxy.yml
+    lumen: {}                # empty config (no parameters possible here)
     influxcsv: {}
   schedule:
     interval: 5m

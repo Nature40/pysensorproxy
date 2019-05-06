@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
 import argparse
-import json
-import yaml
-import logging
-import time
-import threading
-import os
 import datetime
 import http.server
+import json
+import logging
+import os
 import socketserver
+import threading
+import time
+import yaml
 
 import schedule
 from pytimeparse import parse as parse_time
@@ -19,9 +19,11 @@ import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
 import sensorproxy.sensors.influx_sink
 import sensorproxy.sensors.optical
-from sensorproxy.wifi import WiFiManager
+
+from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
 from sensorproxy.rsync import RsyncSender, RsyncException
+from sensorproxy.wifi import WiFiManager
 
 
 logger = logging.getLogger(__name__)
@@ -112,6 +114,10 @@ class SensorProxy:
         self.rsync = None
         if "rsync" in config:
             self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
+
+        self.influx = None
+        if "influx" in config:
+            self.influx = InfluxAPI(**config["influx"])
 
     def _reset_lift(self):
         if not self.lift:
@@ -243,6 +249,10 @@ class SensorProxy:
             if (test) and ("duration" in params):
                 params = params.copy()
                 params["duration"] = "1s"
+
+            if self.influx is not None:
+                params["influx"] = self.influx
+
             sensor.record(dry=test, height_m=height_m, **params)
         except KeyError:
             logger.error(

@@ -20,7 +20,7 @@ class AM2302(LogSensor):
     def _header(self):
         return ["Temperature (°C)", "Humidity (%)"]
 
-    def _read(self):
+    def _read(self, *args, **kwargs):
         logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
@@ -51,7 +51,7 @@ class TSL2561(LogSensor):
     def _header(self):
         return ["Illuminance (lux)", "broadband", "ir"]
 
-    def _read(self):
+    def _read(self, *args, **kwargs):
         logger.debug("Reading TSL2561 sensor via i2c")
 
         try:

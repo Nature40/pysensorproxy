@@ -18,7 +18,7 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str):
+    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, *args, **kwargs):
         adjust_time_s = parse_time(adjust_time)
 
         logger.debug("Reading PiCamera with {}x{} for {}s".format(

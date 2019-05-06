@@ -50,3 +50,11 @@ rsync:
   psk: supersicher
   destination: pi@192.168.4.1:/home/pi/dump
   start_time: "18:00"
+
+influx:
+  host: dsgw.mathematik.uni-marburg.de
+  port: 8086
+  user: admin
+  password: supersicher
+  db: nature40
+

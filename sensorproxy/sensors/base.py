@@ -8,7 +8,7 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Type
 
-from sensorproxy.influx_api import InfluxAPI
+from sensorproxy.influx_api import InfluxAPI, Measurement
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,7 @@ class LogSensor(Sensor):
             writer = csv.writer(file)
             writer.writerow(["Time", "Height (m)"] + self._header)
 
-    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
+    def record(self, *args, dry: bool = False, height_m: float = None, influx: InfluxAPI = None, influx_publish: bool = False, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
         file_path = self.get_file_path()
@@ -104,6 +104,18 @@ class LogSensor(Sensor):
             with open(file_path, "a") as file:
                 writer = csv.writer(file)
                 writer.writerow([ts, height_m] + reading)
+
+            if influx is not None and influx_publish:
+                for sensor, value in zip(self._header, reading):
+                    measurement = Measurement(
+                        box_id="test1",  # TODO
+                        sensor=sensor,
+                        timestamp=ts,
+                        value=str(value),
+                        height=str(height_m))
+
+                    logger.info("Publishing {} to Influx".format(measurement))
+                    influx.submit_measurement(measurement)
 
         return file_path
 

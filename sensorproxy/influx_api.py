@@ -53,6 +53,14 @@ class Measurement():
     def set_height(self, height: float):
         self.__height = height
 
+    def __repr__(self):
+        return '{box_id},{sensor},{timestamp},{value},{height}'.format(
+                box_id=self.get_box_id(),
+                sensor=self.get_sensor(),
+                timestamp=self.get_timestamp(),
+                value=self.get_value(),
+                height=self.get_height())
+
 
 class InfluxAPI():
     def __init__(self, host, port, user, password, db, path=u'', ssl=False):
@@ -98,6 +106,14 @@ class InfluxAPI():
             json_list.append(self.__create_json(measurement))
 
         self.__write_json_to_influx(json_list)
+
+    def submit_measurement(self, measurement: Measurement):
+        """
+        Append a single Measurement to the Influx database.
+
+        :param measurement: <Measurement> single measurement
+        """
+        self.__write_list_of_measurements([measurement])
 
     def submit_file(self, file_path: str, box_id: str, delimiter=','):
         """

@@ -19,7 +19,7 @@ class Random(LogSensor):
     def _header(self):
         return ["int"]
 
-    def _read(self):
+    def _read(self, *args, **kwargs):
         return [random.randint(0, self.maximum)]
 
 
@@ -28,7 +28,7 @@ class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
         super().__init__("bin", *args, **kwargs)
 
-    def _read(self, file_path, bytes):
+    def _read(self, file_path, bytes, *args, **kwargs):
         with open(file_path, "ab") as file:
             file.write(os.urandom(bytes))
 
