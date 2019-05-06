@@ -31,8 +31,5 @@ class InfluxSink(Sensor):
     def refresh(self):
         logger.info("Refreshing InfluxSink..")
 
-    def publish(self, **kwargs):
-        pass
-
     def get_file_path(self):
         logger.info("Fetching FilePath for InfluxSink..")

@@ -44,11 +44,6 @@ class Sensor:
         pass
 
     @abstractmethod
-    def publish(self, **kwargs):
-        """Publish the sensor's data to a remote."""
-        pass
-
-    @abstractmethod
     def get_file_path(self):
         pass
 
@@ -119,19 +114,6 @@ class LogSensor(Sensor):
 
         return file_path
 
-    def publish(self, **kwargs):
-        if kwargs is None:
-            log.warn("LogSensor's publish did not received any kwargs")
-            return
-
-        influx = kwargs.get("influx")
-        if influx is None:
-            log.warn("LogSensor's publish did not received an influx param")
-            return
-
-        # TODO: change box id
-        influx.submit_file(self.get_file_path, "test1")
-
 
 class FileSensor(Sensor):
     """Class for sensors logging more complex data to binary files."""
@@ -180,9 +162,6 @@ class FileSensor(Sensor):
 
         self.records.append(os.path.split(file_path)[1])
         return file_path
-
-    def publish(self, **kwargs):
-        logger.info("FileSensor does not implement the publish method")
 
 
 classes = {}
