@@ -1,5 +1,4 @@
 import logging
-import schedule
 import subprocess
 
 from sensorproxy.wifi import WiFi
@@ -16,14 +15,14 @@ class RsyncSender:
     def __init__(self, proxy, mgr, ssid, psk, destination, start_time):
         self.proxy = proxy
         self.mgr = mgr
-        self.ssid = ssid
-        self.psk = psk
         self.destination = destination
+        self.start_time = start_time
 
         self.wifi = WiFi(ssid, psk)
 
     def _rsync_cmd(self, dry):
-        cmd = ["rsync", "-avz", "--remove-source-files"]
+        cmd = ["rsync", "-avz", "--remove-source-files",
+               "-e 'ssh -o StrictHostKeyChecking=no'"]
 
         if dry:
             cmd.append("--dry-run")
@@ -43,18 +42,15 @@ class RsyncSender:
         cmd = self._rsync_cmd(dry)
         logger.info("Launching rsync: {}".format(" ".join(cmd)))
 
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd)
         p.wait()
-        stderr = p.stderr.read()
 
         if self.mgr and not dry:
             logger.info("disconnecting from WiFi")
             self.mgr.disconnect()
 
         if p.returncode != 0:
-            raise RsyncException("rsync returned {}: {}".format(
-                p.returncode, stderr.decode()))
+            raise RsyncException("rsync returned {}".format(p.returncode))
 
         # Call refresh on each Sensor.
         # This will create new filenames for each FileSensor atm.

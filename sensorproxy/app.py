@@ -73,6 +73,8 @@ class SensorProxy:
         except FileExistsError:
             pass
 
+        os.chmod(self.storage_path, 0o777)
+
         logger.info("using storage at '{}'".format(self.storage_path))
 
     def _init_logging(self, level="info", file_name="sensorproxy.log"):
@@ -299,6 +301,10 @@ class SensorProxy:
     def run(self):
         for name, metering in self.meterings.items():
             self._schedule_metering(name, metering)
+
+        if self.rsync is not None:
+            logger.info("rsyncing at '{}'".format(self.rsync.start_time))
+            schedule.every().day.at(self.rsync.start_time).do(self.rsync.sync)
 
         while True:
             schedule.run_pending()
