@@ -6,6 +6,7 @@ import http.server
 import json
 import logging
 import os
+import platform
 import socketserver
 import threading
 import time
@@ -45,10 +46,7 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
-        self.name = None
-        if "name" in config:
-            self.name = config["name"]
-
+        self._init_identifiers(config)
         self._init_storage(**config)
         self._init_logging(**config["log"])
         self._init_sensors(config["sensors"])
@@ -62,6 +60,10 @@ class SensorProxy:
 
         if not test:
             self._reset_lift()
+
+    def _init_identifiers(self, config):
+        self.hostname = platform.node()
+        self.id = config.get("id", None)
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path

@@ -1,4 +1,4 @@
-name: boxy_mcboxface             # The node's name
+id: boxy_mcboxface                # The node's id
 
 sensors:                          # list of sensors
   am2302:                           # name (choose freely)

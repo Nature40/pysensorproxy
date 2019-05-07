@@ -1,6 +1,7 @@
 import csv
 import os
 
+from collections import namedtuple
 from influxdb import InfluxDBClient
 from typing import List
 
@@ -15,51 +16,9 @@ class WrongLength(Exception):
     pass
 
 
-class Measurement():
-    def __init__(self, sensor: str, timestamp: str, value: float, height: float, box_id: str = None):
-        self.set_box_id(box_id)
-        self.set_sensor(sensor)
-        self.set_timestamp(timestamp)
-        self.set_value(value)
-        self.set_height(height)
-
-    def get_box_id(self):
-        return self.__box_id
-
-    def set_box_id(self, box_id: str):
-        self.__box_id = box_id
-
-    def get_sensor(self):
-        return self.__sensor
-
-    def set_sensor(self, sensor: str):
-        self.__sensor = sensor
-
-    def get_timestamp(self):
-        return self.__timestamp
-
-    def set_timestamp(self, timestamp: str):
-        self.__timestamp = timestamp
-
-    def get_value(self):
-        return self.__value
-
-    def set_value(self, value: float):
-        self.__value = value
-
-    def get_height(self):
-        return self.__height
-
-    def set_height(self, height: float):
-        self.__height = height
-
-    def __repr__(self):
-        return '{box_id},{sensor},{timestamp},{value},{height}'.format(
-                box_id=self.get_box_id(),
-                sensor=self.get_sensor(),
-                timestamp=self.get_timestamp(),
-                value=self.get_value(),
-                height=self.get_height())
+Measurement = namedtuple(
+        "Measurement",
+        ["hostname", "id", "sensor", "timestamp", "value", "height"])
 
 
 class InfluxAPI():
@@ -77,14 +36,15 @@ class InfluxAPI():
         :param measurement: <Measurement>
         """
         json_body = {}
-        json_body["measurement"] = measurement.get_sensor()
+        json_body["measurement"] = measurement.sensor
         tags = {}
-        tags["host"] = measurement.get_box_id()
-        tags["height"] = measurement.get_height()
+        tags["id"] = measurement.id
+        tags["hostname"] = measurement.hostname
+        tags["height"] = measurement.height
         json_body["tags"] = tags
-        json_body["time"] = measurement.get_timestamp()
+        json_body["time"] = measurement.timestamp
         fields = {}
-        fields["value"] = measurement.get_value()
+        fields["value"] = measurement.value
         json_body["fields"] = fields
         return json_body
 
@@ -111,12 +71,14 @@ class InfluxAPI():
     def submit_measurement(self, measurement: Measurement):
         """
         Append a single Measurement to the Influx database. The Measurement's
-        box_id will be set to the SensorProxy's name, if it is None.
+        id or hostname will be set to the SensorProxy's name, if it is None.
 
         :param measurement: <Measurement> single measurement
         """
-        if measurement.get_box_id() is None:
-            measurement.set_box_id(self.proxy.name)
+        if measurement.id is None:
+            measurement = measurement._replace(id=self.proxy.id)
+        if measurement.hostname is None:
+            measurement = measurement._replace(hostname=self.proxy.hostname)
 
         self.__write_list_of_measurements([measurement])
 
@@ -140,8 +102,12 @@ class InfluxAPI():
                         col_number = 0
                         for col in row[2:]:
                             measurements.append(Measurement(
-                                header[col_number], row[0], col, row[1],
-                                box_id=self.proxy.name))
+                                id=self.proxy.id,
+                                hostname=self.proxy.hostname,
+                                sensor=header[col_number],
+                                timestamp=row[0],
+                                value=col,
+                                height=row[1]))
                             col_number += 1
                     line_count += 1
         else:
