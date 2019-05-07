@@ -21,21 +21,27 @@ class InfluxSink(Sensor):
     def record(self, *args, dry: bool = False, influx: InfluxAPI = None, **kwargs):
         if influx is None:
             raise SensorNotAvailableException(
-                    "InfluxSink received an empty `influx` object")
+                "InfluxSink received an empty `influx` object")
 
         if not os.path.isdir(self._directory):
             raise SensorNotAvailableException(
-                    "InfluxSink's directory {} does not exist".format(
-                        self._directory))
+                "InfluxSink's directory {} does not exist".format(
+                    self._directory))
 
         files = [os.path.join(self._directory, f)
                  for f in os.listdir(self._directory)
                  if f.endswith('.csv')]
 
-        for f in files:
-            logger.info("Sending {} to InfluxDB".format(f))
+        for file_path in files:
+            logger.info("Sending {} to InfluxDB".format(file_path))
+
+            # convention: first part of the filename is the sensorbox id
+            id = os.path.basename(file_path).split("-")[0]
+            # convention: rsynced files are copied to /data/incoming/<hostname>/<id>-<timestamp>-<name>.csv
+            hostname = os.path.basename(os.path.dirname(file_path))
+
             if not dry:
-                influx.submit_file(f)
+                influx.submit_file(file_path, id, hostname)
 
     def refresh(self):
         pass

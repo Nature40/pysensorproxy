@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Sensor:
     """Abstract sensor class"""
 
-    def __init__(self, name: str, storage_path: str, **kwargs):
+    def __init__(self, name: str, storage_path: str, id: str, hostname: str, **kwargs):
         """
         Args:
             name (str): given name of the sensor
@@ -25,6 +25,9 @@ class Sensor:
 
         self.name = name
         self.storage_path = storage_path
+        self.id = id
+        self.hostname = hostname
+
         self.lock = threading.Lock()
         super().__init__()
 
@@ -83,7 +86,8 @@ class LogSensor(Sensor):
 
     def refresh(self):
         self.__file_path = os.path.join(
-            self.storage_path, "{}_{}.csv".format(Sensor.time_repr(), self.name)
+            self.storage_path, "{}-{}-{}.csv".format(
+                self.id, Sensor.time_repr(), self.name)
         )
 
         with open(self.get_file_path(), "a") as file:
@@ -103,12 +107,12 @@ class LogSensor(Sensor):
             if influx is not None and influx_publish:
                 for sensor, value in zip(self._header, reading):
                     measurement = Measurement(
-                            id=None,
-                            hostname=None,
-                            sensor=sensor,
-                            timestamp=ts,
-                            value=str(value),
-                            height=str(height_m))
+                        id=self.id,
+                        hostname=self.hostname,
+                        sensor=sensor,
+                        timestamp=ts,
+                        value=str(value),
+                        height=str(height_m))
 
                     logger.info("Publishing {} to Influx".format(measurement))
                     influx.submit_measurement(measurement)
@@ -137,8 +141,8 @@ class FileSensor(Sensor):
 
         return os.path.join(
             self.storage_path,
-            "{}_{}m_{}.{}".format(
-                Sensor.time_repr(), height_m, self.name, self.file_ext
+            "{}-{}-{}m-{}.{}".format(
+                self.id, Sensor.time_repr(), height_m, self.name, self.file_ext
             ),
         )
 

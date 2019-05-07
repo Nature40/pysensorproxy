@@ -1,5 +1,6 @@
 import logging
 import subprocess
+import os
 
 from sensorproxy.wifi import WiFi
 
@@ -21,14 +22,14 @@ class RsyncSender:
         self.wifi = WiFi(ssid, psk)
 
     def _rsync_cmd(self, dry):
-        cmd = ["rsync", "-avz", "--remove-source-files",
+        cmd = ["rsync", "-avz", "--remove-source-files", "--no-relative",
                "-e", "ssh -o StrictHostKeyChecking=no"]
 
         if dry:
             cmd.append("--dry-run")
 
-        cmd.append(self.proxy.storage_path)
-        cmd.append(self.destination)
+        cmd.append(os.path.join(self.proxy.storage_path, "."))
+        cmd.append(os.path.join(self.destination, self.proxy.hostname))
 
         return cmd
 

@@ -87,7 +87,8 @@ class SensorProxy:
         except KeyError:
             logging_level = logging.INFO
             logger.warn(
-                "'{}' is no valid logging level, defaulting to 'info'".format(level)
+                "'{}' is no valid logging level, defaulting to 'info'".format(
+                    level)
             )
 
         # create logfile
@@ -105,7 +106,8 @@ class SensorProxy:
         self.sensors = {}
         for name, params in sensor_config.items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
-            sensor = sensor_cls(name, self.storage_path, **params)
+            sensor = sensor_cls(name, self.storage_path,
+                                self.id, self.hostname, **params)
             self.sensors[name] = sensor
 
             logger.info("added sensor {} ({})".format(name, params["type"]))
@@ -208,11 +210,14 @@ class SensorProxy:
                 self.lift.connect()
 
                 for height in metering["heights"]:
-                    logger.info("Running metering {} at {}m.".format(name, height))
+                    logger.info(
+                        "Running metering {} at {}m.".format(name, height))
                     self.lift.move_to(height)
-                    self._record_sensors_threaded(metering["sensors"], test=test)
+                    self._record_sensors_threaded(
+                        metering["sensors"], test=test)
 
-                logger.info("Metering {} is done, moving back to bottom.".format(name))
+                logger.info(
+                    "Metering {} is done, moving back to bottom.".format(name))
                 self.lift.move_to(0.0)
                 self.lift.disconnect()
 
@@ -269,7 +274,8 @@ class SensorProxy:
                 )
             )
         except sensorproxy.sensors.base.SensorNotAvailableException as e:
-            logger.error("Sensor '{}' is not available: {}".format(sensor.name, e))
+            logger.error(
+                "Sensor '{}' is not available: {}".format(sensor.name, e))
 
     def _schedule_metering(self, name: str, metering: dict):
         # default values for start and end (whole day)
@@ -318,7 +324,8 @@ def setup_logging(level):
         logging_level = logging.ERROR - (10 * level)
 
     # create stderr log
-    stderr_formatter = logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+    stderr_formatter = logging.Formatter(
+        "%(name)s - %(levelname)s - %(message)s")
     stderr_handler = logging.StreamHandler()
     stderr_handler.setFormatter(stderr_formatter)
 
