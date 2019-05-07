@@ -23,6 +23,11 @@ class InfluxSink(Sensor):
             raise SensorNotAvailableException(
                     "InfluxSink received an empty `influx` object")
 
+        if not os.path.isdir(self._directory):
+            raise SensorNotAvailableException(
+                    "InfluxSink's directory {} does not exist".format(
+                        self._directory))
+
         files = [os.path.join(self._directory, f)
                  for f in os.listdir(self._directory)
                  if f.endswith('.csv')]
