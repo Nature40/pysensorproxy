@@ -16,7 +16,7 @@ class WrongLength(Exception):
 
 
 class Measurement():
-    def __init__(self, box_id: str, sensor: str, timestamp: str, value: float, height: float):
+    def __init__(self, sensor: str, timestamp: str, value: float, height: float, box_id: str = None):
         self.set_box_id(box_id)
         self.set_sensor(sensor)
         self.set_timestamp(timestamp)
@@ -63,7 +63,8 @@ class Measurement():
 
 
 class InfluxAPI():
-    def __init__(self, host, port, user, password, db, path=u'', ssl=False):
+    def __init__(self, proxy, host, port, user, password, db, path=u'', ssl=False):
+        self.proxy = proxy
         self.client = InfluxDBClient(
                 host=host, port=port,
                 username=user, password=password, database=db,
@@ -109,17 +110,20 @@ class InfluxAPI():
 
     def submit_measurement(self, measurement: Measurement):
         """
-        Append a single Measurement to the Influx database.
+        Append a single Measurement to the Influx database. The Measurement's
+        box_id will be set to the SensorProxy's name, if it is None.
 
         :param measurement: <Measurement> single measurement
         """
+        if measurement.get_box_id() is None:
+            measurement.set_box_id(self.proxy.name)
+
         self.__write_list_of_measurements([measurement])
 
-    def submit_file(self, file_path: str, box_id: str, delimiter=','):
+    def submit_file(self, file_path: str, delimiter=','):
         """
 
         :param file_path: full qualified path to the file
-        :param box_id: <str> the box_id of the sensorbox also use in the field
         :param delimiter: <str> the delimiter of the submitted file
         :return:
         """
@@ -135,14 +139,11 @@ class InfluxAPI():
                     else:
                         col_number = 0
                         for col in row[2:]:
-                            measurements.append(Measurement(box_id, header[col_number], row[0], col, row[1]))
+                            measurements.append(Measurement(
+                                header[col_number], row[0], col, row[1],
+                                box_id=self.proxy.name))
                             col_number += 1
                     line_count += 1
         else:
             raise WrongFilePath("{} does not exist".format(file_path))
         self.__write_list_of_measurements(measurements)
-
-
-if __name__== "__main__":
-    influx = InfluxAPI("10.0.1.60", 8086, "nature40", "nature40", "sensors")
-    influx.submit_file("/Users/lampep/Downloads/2019-03-11T172503_am2302.csv", "test1")

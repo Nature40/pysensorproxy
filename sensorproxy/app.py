@@ -45,6 +45,10 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
+        self.name = None
+        if "name" in config:
+            self.name = config["name"]
+
         self._init_storage(**config)
         self._init_logging(**config["log"])
         self._init_sensors(config["sensors"])
@@ -117,7 +121,7 @@ class SensorProxy:
 
         self.influx = None
         if "influx" in config:
-            self.influx = InfluxAPI(**config["influx"])
+            self.influx = InfluxAPI(self, **config["influx"])
 
     def _reset_lift(self):
         if not self.lift:

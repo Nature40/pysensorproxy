@@ -30,7 +30,7 @@ class InfluxSink(Sensor):
         for f in files:
             logger.info("Sending {} to InfluxDB".format(f))
             if not dry:
-                influx.submit_file(f, "test1")  # TODO: sensor's name
+                influx.submit_file(f)
 
     def refresh(self):
         pass

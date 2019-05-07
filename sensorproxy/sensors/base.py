@@ -103,7 +103,6 @@ class LogSensor(Sensor):
             if influx is not None and influx_publish:
                 for sensor, value in zip(self._header, reading):
                     measurement = Measurement(
-                        box_id="test1",  # TODO
                         sensor=sensor,
                         timestamp=ts,
                         value=str(value),
