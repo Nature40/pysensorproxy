@@ -1,11 +1,9 @@
-id: boxy_mcboxface                # The node's id
+id: mof_cst00001_sb001
 
 sensors:                          # list of sensors
   am2302:                           # name (choose freely)
     type: AM2302                      # type (must be in sensorproxy.sensors.*)
     pin: 4                            # additional configuration parameter
-  lumen:
-    type: TSL2561
   mic:
     type: Microphone
     card: 1
@@ -17,9 +15,9 @@ sensors:                          # list of sensors
   cam:
     type: PiCamera
     img_format: jpeg
-  influxcsv:
+  influx:
     type: InfluxSink
-    directory: /data
+    directory: /data/incoming
 
 storage_path: /data               # path to save files
 
@@ -31,25 +29,11 @@ wifi:                             # wifi properties to be configured
   interface: wlan0                # the interface to be managed
   host_ap: true                   # open an access point if there is no outbounding connection
 
-lift:                             # lift configuration
-  ssid: nature40.liftsystem.709e
-  height: 30
-
-# rsync connects to the configured WiFi and syncs it's storage.
-# NOTE:
-# - the store's SSH public key must be inserted in /root/.ssh/known_hosts
-# - the root user needs a SSH key pair
-# - the root user's public key must be inserted in ~pi/.ssh/authorized_keys
-rsync:
-  ssid: nature40.liftsystem.34a4
-  psk: supersicher
-  destination: pi@192.168.4.1:/home/pi/dump
-  start_time: "18:00"
-
 influx:
-  host: dsgw.mathematik.uni-marburg.de
-  port: 8086
-  user: admin
+  host: ds.mathematik.uni-marburg.de
+  port: 443
+  path: /influx/
+  ssl: true
+  user: sensorboxes
   password: supersicher
   db: nature40
-
