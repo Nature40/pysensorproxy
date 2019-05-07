@@ -18,6 +18,8 @@ sensors:                          # list of sensors
   influx:
     type: InfluxSink
     directory: /data/incoming
+  datavolume:
+    type: TelekomVolume
 
 storage_path: /data               # path to save files
 

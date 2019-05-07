@@ -16,3 +16,9 @@ ongoing:
     influx: {}
   schedule:
     interval: 5m
+
+hourly:
+  sensors:
+    datavolume: {}
+  schedule:
+    interval: 60m
