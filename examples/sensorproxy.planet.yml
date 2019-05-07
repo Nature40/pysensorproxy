@@ -1,4 +1,4 @@
-id: mof_cst00001_sb001
+id: ltf_dmy_00001_plnt            # LahnbergeTestForest Dummy 00001 Planet
 
 sensors:                          # list of sensors
   am2302:                           # name (choose freely)
@@ -12,8 +12,8 @@ sensors:                          # list of sensors
     rate: 44100
     level: 100%
     audio_format: wav
-  cam:
-    type: PiCamera
+  noircam:
+    type: PiNoirCamera
     img_format: jpeg
   influx:
     type: InfluxSink
