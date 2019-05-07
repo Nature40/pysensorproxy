@@ -22,7 +22,7 @@ class RsyncSender:
 
     def _rsync_cmd(self, dry):
         cmd = ["rsync", "-avz", "--remove-source-files",
-               "-e 'ssh -o StrictHostKeyChecking=no'"]
+               "-e", "ssh -o StrictHostKeyChecking=no"]
 
         if dry:
             cmd.append("--dry-run")
