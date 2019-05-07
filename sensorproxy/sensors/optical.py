@@ -42,5 +42,4 @@ class PiCamera(FileSensor):
 
 @register_sensor
 class PiNoirCamera(PiCamera):
-    def __init__(self, *args, img_format: str, **kwargs):
-        super().__init__(*args, img_format, **kwargs)
+    pass
