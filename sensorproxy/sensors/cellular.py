@@ -26,7 +26,7 @@ class TelekomVolume(LogSensor):
             status_request = urllib.request.Request(self.endpoint_uri)
             status_request.add_header('User-Agent', 'Mozilla/5.0')
             status_json = urllib.request.urlopen(status_request)
-            status = json.loads(status_json.read())
+            status = json.loads(status_json.read().decode())
 
         except urllib.request.URLError as e:
             raise SensorNotAvailableException(
