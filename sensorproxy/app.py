@@ -18,8 +18,9 @@ from pytimeparse import parse as parse_time
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.environment
-import sensorproxy.sensors.influx_sink
+import sensorproxy.sensors.sink
 import sensorproxy.sensors.optical
+import sensorproxy.sensors.cellular
 
 from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
@@ -67,15 +68,18 @@ class SensorProxy:
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path
-
         try:
-            os.makedirs(self.storage_path)
+            os.makedirs(storage_path)
         except FileExistsError:
             pass
 
-        os.chmod(self.storage_path, 0o777)
+        self.storage_path_node = os.path.join(storage_path, self.hostname)
+        try:
+            os.makedirs(self.storage_path_node)
+        except FileExistsError:
+            pass
 
-        logger.info("using storage at '{}'".format(self.storage_path))
+        logger.info("using storage at '{}'".format(storage_path))
 
     def _init_logging(self, level="info", file_name="sensorproxy.log"):
         logfile_path = os.path.join(self.storage_path, file_name)

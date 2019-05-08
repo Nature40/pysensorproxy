@@ -86,8 +86,8 @@ class LogSensor(Sensor):
 
     def refresh(self):
         self.__file_path = os.path.join(
-            self.storage_path, "{}-{}-{}.csv".format(
-                self.id, Sensor.time_repr(), self.name)
+            self.storage_path, "{}/{}-{}-{}.csv".format(
+                self.hostname, self.id, Sensor.time_repr(), self.name)
         )
 
         with open(self.get_file_path(), "a") as file:
@@ -141,9 +141,8 @@ class FileSensor(Sensor):
 
         return os.path.join(
             self.storage_path,
-            "{}-{}-{}m-{}.{}".format(
-                self.id, Sensor.time_repr(), height_m, self.name, self.file_ext
-            ),
+            "{}/{}-{}-{}m-{}.{}".format(self.hostname, self.id,
+                                        Sensor.time_repr(), height_m, self.name, self.file_ext),
         )
 
     @abstractmethod

@@ -1,6 +1,6 @@
 daytime:              # name of the measuring cycle
   sensors:              # dict of the sensors to be measured
-    noircam:                  # reference to `noircam`, configured in the static config (yml)
+    noircam:              # reference to `noircam`, configured in the static config (yml)
       res_X: 2592           # image resolution, set according to https://www.raspberrypi.org/documentation/raspbian/applications/camera.md
       res_Y: 1944
       adjust_time: 2s       # time to adjust to brightness
@@ -11,14 +11,9 @@ daytime:              # name of the measuring cycle
 
 ongoing:
   sensors:
-    am2302:
-      influx_publish: True   # publish each measurement to the InfluxDB specified in the sensorproxy.yml
-    influx: {}
+    sink: 
+      influx_publish: True
+    datavolume: 
+      influx_publish: True
   schedule:
-    interval: 5m
-
-hourly:
-  sensors:
-    datavolume: {}
-  schedule:
-    interval: 60m
+    interval: 1m

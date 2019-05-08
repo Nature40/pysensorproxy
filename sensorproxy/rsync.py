@@ -28,7 +28,9 @@ class RsyncSender:
         if dry:
             cmd.append("--dry-run")
 
-        cmd.append(os.path.join(self.proxy.storage_path, "."))
+        local_storage_path = os.path.join(
+            self.proxy.storage_path, self.proxy.hostname)
+        cmd.append(os.path.join(local_storage_path, "."))
         cmd.append(os.path.join(self.destination, self.proxy.hostname))
 
         return cmd
