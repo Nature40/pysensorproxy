@@ -9,11 +9,16 @@ daytime:              # name of the measuring cycle
   schedule:               # schedule parametes
     interval: 5m           # measurement is mandatory (max. 24h)
 
-ongoing:
+incoming:
   sensors:
     sink: 
       influx_publish: True
+  schedule:
+    interval: 1m
+
+sysinfo:
+  sensors:
     datavolume: 
       influx_publish: True
   schedule:
-    interval: 1m
+    interval: 10m
