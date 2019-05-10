@@ -21,10 +21,10 @@ import sensorproxy.sensors.environment
 import sensorproxy.sensors.sink
 import sensorproxy.sensors.optical
 import sensorproxy.sensors.cellular
+import sensorproxy.sensors.rsync
 
 from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
-from sensorproxy.rsync import RsyncSender, RsyncException
 from sensorproxy.wifi import WiFiManager
 
 
@@ -110,8 +110,7 @@ class SensorProxy:
         self.sensors = {}
         for name, params in sensor_config.items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
-            sensor = sensor_cls(name, self.storage_path,
-                                self.id, self.hostname, **params)
+            sensor = sensor_cls(self, name, **params)
             self.sensors[name] = sensor
 
             logger.info("added sensor {} ({})".format(name, params["type"]))
@@ -124,10 +123,6 @@ class SensorProxy:
         self.lift = None
         if "lift" in config:
             self.lift = Lift(self.wifi_mgr, **config["lift"])
-
-        self.rsync = None
-        if "rsync" in config:
-            self.rsync = RsyncSender(self, self.wifi_mgr, **config["rsync"])
 
         self.influx = None
         if "influx" in config:
@@ -311,10 +306,6 @@ class SensorProxy:
     def run(self):
         for name, metering in self.meterings.items():
             self._schedule_metering(name, metering)
-
-        if self.rsync is not None:
-            logger.info("rsyncing at '{}'".format(self.rsync.start_time))
-            schedule.every().day.at(self.rsync.start_time).do(self.rsync.sync)
 
         while True:
             schedule.run_pending()

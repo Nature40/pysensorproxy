@@ -2,24 +2,23 @@ import logging
 import subprocess
 import os
 
-from sensorproxy.wifi import WiFi
-
+from .base import register_sensor, Sensor, LogSensor, SensorNotAvailableException
+from sensorproxy.wifi import WiFi, WiFiManager
 
 logger = logging.getLogger(__name__)
 
 
-class RsyncException(Exception):
-    pass
+@register_sensor
+class RsyncSender(LogSensor):
+    def __init__(self, *args, ssid: str, psk: str, destination: str, **kwargs):
+        super().__init__(*args, **kwargs)
 
-
-class RsyncSender:
-    def __init__(self, proxy, mgr, ssid, psk, destination, start_time):
-        self.proxy = proxy
-        self.mgr = mgr
         self.destination = destination
-        self.start_time = start_time
-
         self.wifi = WiFi(ssid, psk)
+
+    @property
+    def _header(self):
+        return ["RSync Status"]
 
     def _rsync_cmd(self, dry):
         cmd = ["rsync", "-avz", "--remove-source-files", "--no-relative",
@@ -35,10 +34,10 @@ class RsyncSender:
 
         return cmd
 
-    def sync(self, dry=False):
-        if self.mgr and not dry:
+    def _read(self, dry=False):
+        if self.proxy.wifi_mgr and not dry:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
-            self.mgr.connect(self.wifi)
+            self.proxy.wifi_mgr.connect(self.wifi)
         else:
             logger.info("WiFi is handled externally, dry: {}".format(dry))
 
@@ -48,14 +47,18 @@ class RsyncSender:
         p = subprocess.Popen(cmd)
         p.wait()
 
-        if self.mgr and not dry:
+        if self.proxy.wifi_mgr and not dry:
             logger.info("disconnecting from WiFi")
-            self.mgr.disconnect()
+            self.proxy.wifi_mgr.disconnect()
 
         if p.returncode != 0:
-            raise RsyncException("rsync returned {}".format(p.returncode))
+            raise SensorNotAvailableException(
+                "rsync returned {}".format(p.returncode))
 
         # Call refresh on each Sensor.
         # This will create new filenames for each FileSensor atm.
+        logger.info("refreshing sensors")
         for _, sensor in self.proxy.sensors.items():
             sensor.refresh()
+
+        return [p.returncode]

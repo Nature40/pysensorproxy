@@ -16,17 +16,15 @@ logger = logging.getLogger(__name__)
 class Sensor:
     """Abstract sensor class"""
 
-    def __init__(self, name: str, storage_path: str, id: str, hostname: str, **kwargs):
+    def __init__(self, proxy, name: str, **kwargs):
         """
         Args:
             name (str): given name of the sensor
             storage_path (str): path to store files in
         """
 
+        self.proxy = proxy
         self.name = name
-        self.storage_path = storage_path
-        self.id = id
-        self.hostname = hostname
 
         self.lock = threading.Lock()
         super().__init__()
@@ -86,8 +84,8 @@ class LogSensor(Sensor):
 
     def refresh(self):
         self.__file_path = os.path.join(
-            self.storage_path, "{}/{}-{}-{}.csv".format(
-                self.hostname, self.id, Sensor.time_repr(), self.name)
+            self.proxy.storage_path, "{}/{}-{}-{}.csv".format(
+                self.proxy.hostname, self.proxy.id, Sensor.time_repr(), self.name)
         )
 
         with open(self.get_file_path(), "a") as file:
@@ -107,8 +105,8 @@ class LogSensor(Sensor):
             if influx is not None and influx_publish:
                 for sensor, value in zip(self._header, reading):
                     measurement = Measurement(
-                        id=self.id,
-                        hostname=self.hostname,
+                        id=self.proxy.id,
+                        hostname=self.proxy.hostname,
                         sensor=sensor,
                         timestamp=ts,
                         value=str(value),
@@ -140,8 +138,8 @@ class FileSensor(Sensor):
             return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
 
         return os.path.join(
-            self.storage_path,
-            "{}/{}-{}-{}m-{}.{}".format(self.hostname, self.id,
+            self.proxy.storage_path,
+            "{}/{}-{}-{}m-{}.{}".format(self.proxy.hostname, self.proxy.id,
                                         Sensor.time_repr(), height_m, self.name, self.file_ext),
         )
 

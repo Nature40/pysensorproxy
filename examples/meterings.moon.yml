@@ -18,3 +18,9 @@ ongoing:
     lumen: {}
   schedule:
     interval: 5m
+
+sync:
+  sensors:
+    rsync: {}
+  schedule:
+    interval: 30m

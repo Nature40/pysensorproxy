@@ -1,6 +1,9 @@
 import time
 import logging
 
+import Adafruit_DHT
+import tsl2561
+
 from .base import register_sensor, LogSensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
@@ -10,9 +13,6 @@ logger = logging.getLogger(__name__)
 class AM2302(LogSensor):
     def __init__(self, *args, pin: int, **kwargs):
         super().__init__(*args, **kwargs)
-
-        global Adafruit_DHT
-        import Adafruit_DHT
 
         self.pin = pin
 
@@ -43,9 +43,6 @@ class AM2302(LogSensor):
 class TSL2561(LogSensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        global tsl2561
-        import tsl2561
 
     @property
     def _header(self):

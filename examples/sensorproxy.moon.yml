@@ -17,6 +17,10 @@ sensors:                          # list of sensors
   cam:
     type: PiCamera
     img_format: jpeg
+  rsync:
+    ssid: nature40-sensorbox-02823cb2
+    psk: BirdsArentReal
+    destination: pi@192.168.4.1:/data/incoming
 
 storage_path: /data               # path to save files
 
@@ -31,10 +35,3 @@ wifi:                             # wifi properties to be configured
 lift:                             # lift configuration
   ssid: nature40-liftsystem-409e
   height: 6
-
-# rsync connects to the configured WiFi and syncs it's storage.
-rsync:
-  ssid: nature40-sensorbox-02823cb2
-  psk: BirdsArentReal
-  destination: pi@192.168.4.1:/data/incoming
-  start_time: "18:00"
