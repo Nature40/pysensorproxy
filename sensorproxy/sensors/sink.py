@@ -52,7 +52,7 @@ class Sink(Sensor):
             logger.info("consuming data from {}".format(hostname))
 
             # create host directory
-            host_dir = os.path.join(self.storage_path, hostname)
+            host_dir = os.path.join(self.proxy.storage_path, hostname)
             try:
                 os.makedirs(host_dir)
             except FileExistsError:
