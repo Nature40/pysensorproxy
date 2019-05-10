@@ -88,9 +88,10 @@ class LogSensor(Sensor):
                 self.proxy.hostname, self.proxy.id, Sensor.time_repr(), self.name)
         )
 
-        with open(self.get_file_path(), "a") as file:
-            writer = csv.writer(file)
+        with open(self.get_file_path(), "a") as csv_file:
+            writer = csv.writer(csv_file)
             writer.writerow(["Time", "Height (m)"] + self._header)
+            csv_file.flush()
 
     def record(self, *args, dry: bool = False, height_m: float = None, influx: InfluxAPI = None, influx_publish: bool = False, **kwargs):
         ts = Sensor.time_repr()
@@ -98,9 +99,10 @@ class LogSensor(Sensor):
         file_path = self.get_file_path()
 
         if not dry:
-            with open(file_path, "a") as file:
-                writer = csv.writer(file)
+            with open(file_path, "a") as csv_file:
+                writer = csv.writer(csv_file)
                 writer.writerow([ts, height_m] + reading)
+                csv_file.flush()
 
             if influx is not None and influx_publish:
                 for sensor, value in zip(self._header, reading):
