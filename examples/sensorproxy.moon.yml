@@ -18,6 +18,7 @@ sensors:                          # list of sensors
     type: PiCamera
     img_format: jpeg
   rsync:
+    type: RsyncSender
     ssid: nature40-sensorbox-02823cb2
     psk: BirdsArentReal
     destination: pi@192.168.4.1:/data/incoming
