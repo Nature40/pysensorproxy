@@ -73,6 +73,11 @@ class Sink(Sensor):
                 if not dry:
                     file_path = os.path.join(host_dir, file_name)
                     os.rename(file_path_incoming, file_path)
+            try:
+                os.rmdir(host_dir_input)
+            except OSError as e:
+                logger.warn(
+                    "couldn't remove empty folder of {}: {}".format(hostname, e))
 
     def refresh(self):
         pass
