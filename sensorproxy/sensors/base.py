@@ -30,12 +30,8 @@ class Sensor:
         super().__init__()
 
     @abstractmethod
-    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
-        """Read the sensor and write the value.
-
-        Args:
-            dry (bool): don't write the value
-        """
+    def record(self, *args, height_m: float = None, **kwargs):
+        """Read the sensor and write the value. """
 
         pass
 
@@ -83,39 +79,41 @@ class LogSensor(Sensor):
         return self.__file_path
 
     def refresh(self):
+        # basic file format cst_00001_moon-cam-2019-05-07T203027
+        file_name = "{}-{}-{}.csv".format(self.proxy.id,
+                                          self.name, Sensor.time_repr())
+
+        # generate and return full path
         self.__file_path = os.path.join(
-            self.proxy.storage_path, "{}/{}-{}-{}.csv".format(
-                self.proxy.hostname, self.proxy.id, Sensor.time_repr(), self.name)
-        )
+            self.proxy.storage_path, self.proxy.hostname, file_name)
 
         with open(self.get_file_path(), "a") as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(["Time", "Height (m)"] + self._header)
             csv_file.flush()
 
-    def record(self, *args, dry: bool = False, height_m: float = None, influx: InfluxAPI = None, influx_publish: bool = False, **kwargs):
+    def record(self, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
         file_path = self.get_file_path()
 
-        if not dry:
-            with open(file_path, "a") as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow([ts, height_m] + reading)
-                csv_file.flush()
+        with open(file_path, "a") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow([ts, height_m] + reading)
+            csv_file.flush()
 
-            if influx is not None and influx_publish:
-                for sensor, value in zip(self._header, reading):
-                    measurement = Measurement(
-                        id=self.proxy.id,
-                        hostname=self.proxy.hostname,
-                        sensor=sensor,
-                        timestamp=ts,
-                        value=str(value),
-                        height=str(height_m))
+        if self.proxy.influx is not None and influx_publish:
+            for sensor, value in zip(self._header, reading):
+                measurement = Measurement(
+                    id=self.proxy.id,
+                    hostname=self.proxy.hostname,
+                    sensor=sensor,
+                    timestamp=ts,
+                    value=str(value),
+                    height=str(height_m))
 
-                    logger.info("Publishing {} to Influx".format(measurement))
-                    influx.submit_measurement(measurement)
+                logger.info("Publishing {} to Influx".format(measurement))
+                self.proxy.influx.submit_measurement(measurement)
 
         return file_path
 
@@ -133,17 +131,21 @@ class FileSensor(Sensor):
         self.file_ext = file_ext
         self.records = []
 
-    def get_file_path(self, dry: bool = False, height_m: float = None):
+    def get_file_path(self, height_m: float = None):
         """Generated file path for a sensor reading."""
+        # basic file format cst_00001_moon-cam-2019-05-07T203027
+        file_name = "{}-{}-{}".format(self.proxy.id,
+                                      self.name, Sensor.time_repr())
 
-        if dry:
-            return os.path.join("/tmp", "{}.{}".format(uuid.uuid4(), self.file_ext))
+        # append height if available
+        if height_m is not None:
+            file_name += "-{}m".format(height_m)
 
-        return os.path.join(
-            self.proxy.storage_path,
-            "{}/{}-{}-{}m-{}.{}".format(self.proxy.hostname, self.proxy.id,
-                                        Sensor.time_repr(), height_m, self.name, self.file_ext),
-        )
+        # append file extension
+        file_name += ".{}".format(self.file_ext)
+
+        # generate and return full path
+        return os.path.join(self.proxy.storage_path, self.proxy.hostname, file_name)
 
     @abstractmethod
     def _read(self, file_path: str, *args, **kwargs):
@@ -155,14 +157,10 @@ class FileSensor(Sensor):
 
         pass
 
-    def record(self, *args, dry: bool = False, height_m: float = None, **kwargs):
-        file_path = self.get_file_path(height_m=height_m, dry=dry)
+    def record(self, *args, height_m: float = None, **kwargs):
+        file_path = self.get_file_path(height_m=height_m)
 
         self._read(file_path, *args, **kwargs)
-
-        if dry:
-            os.remove(file_path)
-            return None
 
         self.records.append(os.path.split(file_path)[1])
         return file_path

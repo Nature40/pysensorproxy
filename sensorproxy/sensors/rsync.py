@@ -20,12 +20,9 @@ class RsyncSender(LogSensor):
     def _header(self):
         return ["RSync Status"]
 
-    def _rsync_cmd(self, dry):
+    def _rsync_cmd(self):
         cmd = ["rsync", "-avz", "--remove-source-files", "--no-relative",
                "-e", "ssh -o StrictHostKeyChecking=no"]
-
-        if dry:
-            cmd.append("--dry-run")
 
         local_storage_path = os.path.join(
             self.proxy.storage_path, self.proxy.hostname)
@@ -34,20 +31,20 @@ class RsyncSender(LogSensor):
 
         return cmd
 
-    def _read(self, dry=False):
-        if self.proxy.wifi_mgr and not dry:
+    def _read(self):
+        if self.proxy.wifi_mgr:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
             self.proxy.wifi_mgr.connect(self.wifi)
         else:
-            logger.info("WiFi is handled externally, dry: {}".format(dry))
+            logger.info("WiFi is handled externally.")
 
-        cmd = self._rsync_cmd(dry)
+        cmd = self._rsync_cmd()
         logger.info("Launching rsync: {}".format(" ".join(cmd)))
 
         p = subprocess.Popen(cmd)
         p.wait()
 
-        if self.proxy.wifi_mgr and not dry:
+        if self.proxy.wifi_mgr:
             logger.info("disconnecting from WiFi")
             self.proxy.wifi_mgr.disconnect()
 

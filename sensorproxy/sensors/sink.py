@@ -28,16 +28,15 @@ class Sink(Sensor):
 
         self.input_directory = input_directory
 
-    def _consume_influx(self, influx: InfluxAPI, hostname: str, id: str, file_path: str, dry: bool = False):
+    def _consume_influx(self, influx: InfluxAPI, hostname: str, id: str, file_path: str):
         if not file_path.endswith(".csv"):
             logger.debug("ignoring non-csv file")
             return
 
         logger.info("Sending {} to InfluxDB".format(file_path))
-        if not dry:
-            influx.submit_file(file_path, id, hostname)
+        influx.submit_file(file_path, id, hostname)
 
-    def record(self, *args, dry: bool = False, influx: InfluxAPI = None, influx_publish: bool = True, ** kwargs):
+    def record(self, *args, influx_publish: bool = True, ** kwargs):
         if not os.path.isdir(self.input_directory):
             raise SensorNotAvailableException(
                 "Input directory '{}' is not existing.".format(self.input_directory))
@@ -67,12 +66,11 @@ class Sink(Sensor):
                 # call the different consumers
                 if influx_publish:
                     self._consume_influx(
-                        influx, hostname, id, file_path_incoming, dry)
+                        self.proxy.influx, hostname, id, file_path_incoming)
 
                 # move the file away to avoid double-consumption
-                if not dry:
-                    file_path = os.path.join(host_dir, file_name)
-                    os.rename(file_path_incoming, file_path)
+                file_path = os.path.join(host_dir, file_name)
+                os.rename(file_path_incoming, file_path)
             try:
                 os.rmdir(host_dir_input)
             except OSError as e:

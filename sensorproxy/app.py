@@ -258,14 +258,11 @@ class SensorProxy:
         height_m: float,
     ):
         try:
-            if (test) and ("duration" in params):
+            if test:
                 params = params.copy()
                 params["duration"] = "1s"
 
-            if self.influx is not None:
-                params["influx"] = self.influx
-
-            sensor.record(dry=test, height_m=height_m, **params)
+            sensor.record(height_m=height_m, **params)
         except KeyError:
             logger.error(
                 "Sensor '{}' is not defined in config: {}".format(

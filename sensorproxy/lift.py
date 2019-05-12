@@ -94,11 +94,10 @@ class Lift:
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
 
-    def connect(self, dry: bool = False, timeout_s: float = 10):
+    def connect(self, timeout_s: float = 10):
         """Connect to the configured lift.
 
         Args:
-            dry (bool): don't connect to configured WiFi
             timeout (float): timeout for connection attempts
 
         Raises:
@@ -108,7 +107,7 @@ class Lift:
         logger.debug("Requesting lift access.")
         self.lock.acquire()
 
-        if self.mgr and not dry:
+        if self.mgr:
             logger.info("connecting to '{}'".format(self.wifi.ssid))
             self.mgr.connect(self.wifi)
         else:
@@ -128,17 +127,15 @@ class Lift:
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
-    def disconnect(self, dry: bool = False):
+    def disconnect(self):
         """Disconnect from the configured lift.
-
-        dry (bool): Don't disconnect from configured WiFi.
         """
 
         logger.info("disconnecting from lift")
         self._sock.close()
         self._sock = None
 
-        if self.mgr and not dry:
+        if self.mgr:
             self.mgr.disconnect()
 
         logger.debug("Releasing lift access.")
