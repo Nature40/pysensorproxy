@@ -305,7 +305,7 @@ class Lift:
         # compute travel distance and duration
         travel_distance_m = height_request - self._current_height_m
         if travel_distance_m < 0:
-            travel_speed_mps = self.height / self._time_down_s
+            travel_speed_mps = - (self.height / self._time_down_s)
             motor_speed = -255
         else:
             travel_speed_mps = self.height / self._time_up_s
