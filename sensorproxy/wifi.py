@@ -3,6 +3,7 @@ import tempfile
 import base64
 import logging
 import signal
+import threading
 
 logger = logging.getLogger(__name__)
 
@@ -95,26 +96,26 @@ class WiFiConnectionError(Exception):
 class WiFiManager:
     """A Class to manage WiFi connections."""
 
-    def __init__(self, interface="wlan0", host_ap=True):
+    def __init__(self, interface="wlan0"):
         """
         Args:
             interface (str): WiFi interface to be managed
         """
 
         self.interface = interface
-        self.host_ap = host_ap
 
+        self.lock = threading.Lock()
         self.wpa_supplicant = None
-        self.start_ap()
+        self._start_ap()
 
-    def start_ap(self):
+    def _start_ap(self):
         if self.wpa_supplicant is not None:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
             run(["ifup", self.interface])
             run(["systemctl", "start", "hostapd"])
 
-    def stop_ap(self):
+    def _stop_ap(self):
         run(["systemctl", "stop", "hostapd"])
         run(["ifdown", self.interface])
 
@@ -126,11 +127,14 @@ class WiFiManager:
             timeout (int): timeout for dhclient
         """
 
-        logger.info("connecting to wifi '{}'".format(wifi.ssid))
+        logger.info("requesting wifi access...")
+        self.lock.acquire()
+
+        logger.info("onnecting to wifi '{}'".format(wifi.ssid))
         if self.wpa_supplicant != None:
             self.disconnect()
 
-        self.stop_ap()
+        self._stop_ap()
 
         config_path = wifi._generate_config()
         wpa_cmd = ["wpa_supplicant", "-c", config_path, "-i", self.interface]
@@ -144,7 +148,9 @@ class WiFiManager:
         except Exception as e:
             self.wpa_supplicant.kill()
             self.wpa_supplicant = None
-            self.start_ap()
+
+            self._start_ap()
+            self.lock.release()
 
             logger.error("wifi connection failed: {}".format(e))
             raise WiFiConnectionError(e)
@@ -164,7 +170,8 @@ class WiFiManager:
 
         logger.info("wifi disconnected")
 
-        self.start_ap()
+        self._start_ap()
+        self.lock.release()
 
 
 if __name__ == "__main__":
