@@ -31,7 +31,7 @@ class RsyncSender(LogSensor):
 
         return cmd
 
-    def _read(self):
+    def _read(self, *args, **kwargs):
         if self.proxy.wifi_mgr:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
             self.proxy.wifi_mgr.connect(self.wifi)
