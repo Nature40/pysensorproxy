@@ -19,6 +19,7 @@ import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.cellular
 import sensorproxy.sensors.environment
+import sensorproxy.sensors.logger
 import sensorproxy.sensors.optical
 import sensorproxy.sensors.rsync
 import sensorproxy.sensors.sink
@@ -52,8 +53,8 @@ class SensorProxy:
         self._init_identifiers(config)
         self._init_storage(**config)
         self._init_logging(**config["log"])
-        self._init_sensors(config["sensors"])
         self._init_optionals(config)
+        self._init_sensors(config["sensors"])
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:

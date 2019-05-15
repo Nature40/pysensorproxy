@@ -3,6 +3,7 @@ __all__ = [
     "base",
     "cellular",
     "environment",
+    "logger",
     "optical",
     "random",
     "rsync",

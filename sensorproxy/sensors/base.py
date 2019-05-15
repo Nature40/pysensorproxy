@@ -92,9 +92,12 @@ class LogSensor(Sensor):
             writer.writerow(["Time", "Height (m)"] + self._header)
             csv_file.flush()
 
-    def record(self, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
+    def record(self, *args, **kwargs):
         ts = Sensor.time_repr()
         reading = self._read(*args, **kwargs)
+        self._publish(ts, reading, *args, **kwargs)
+
+    def _publish(self, ts, reading, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
         file_path = self.get_file_path()
 
         with open(file_path, "a") as csv_file:
