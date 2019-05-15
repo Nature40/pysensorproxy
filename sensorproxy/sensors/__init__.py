@@ -1,7 +1,11 @@
 __all__ = [
-        "audio",
-        "base",
-        "environment",
-        "optical",
-        "random"
-        ]
+    "audio",
+    "base",
+    "cellular",
+    "environment",
+    "optical",
+    "random",
+    "rsync",
+    "sink",
+    "system",
+]

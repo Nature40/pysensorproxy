@@ -17,11 +17,13 @@ from pytimeparse import parse as parse_time
 
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
-import sensorproxy.sensors.environment
-import sensorproxy.sensors.sink
-import sensorproxy.sensors.optical
 import sensorproxy.sensors.cellular
+import sensorproxy.sensors.environment
+import sensorproxy.sensors.optical
 import sensorproxy.sensors.rsync
+import sensorproxy.sensors.sink
+import sensorproxy.sensors.system
+
 
 from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
