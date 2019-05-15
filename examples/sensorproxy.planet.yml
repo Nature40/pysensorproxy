@@ -17,6 +17,10 @@ sensors:
     input_directory: /data/incoming
   datavolume:
     type: TelekomVolume
+  cpu:
+    type: CPU
+  mem:
+    type: Memory
 
 storage_path: /data
 

@@ -24,4 +24,10 @@ sync:
     rsync: {}
   schedule:
     interval: 30m
-  heights: [0]
+
+sysinfo:
+  sensors:
+    cpu: {}
+    mem: {}
+  schedule:
+    interval: 30m

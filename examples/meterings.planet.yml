@@ -18,6 +18,10 @@ incoming:
 
 sysinfo:
   sensors:
+    cpu: 
+      influx_publish: True
+    mem: 
+      influx_publish: True
     datavolume: 
       influx_publish: True
   schedule:

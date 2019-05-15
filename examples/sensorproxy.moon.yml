@@ -17,6 +17,10 @@ sensors:                          # list of sensors
   cam:
     type: PiCamera
     img_format: jpeg
+  cpu:
+    type: CPU
+  mem:
+    type: Memory
   rsync:
     type: RsyncSender
     ssid: nature40-sensorbox-02823cb2
