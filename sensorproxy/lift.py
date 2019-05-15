@@ -38,7 +38,7 @@ class _ResponseTimeoutException(LiftConnectionException):
 class Lift:
     """Class representing a lift and its configuration."""
 
-    def __init__(self, mgr: WiFiManager, height: float, ssid: str, psk: str = "supersicher", hall_bottom_pin: int = 5, hall_top_pin: int = 6, ip: str = "192.168.3.254", port: int = 35037, update_interval_s: float = 0.05, timeout_s: float = 0.5):
+    def __init__(self, mgr: WiFiManager, height: float, ssid: str, psk: str = "supersicher", hall_bottom_pin: int = 5, hall_top_pin: int = 6, ip: str = "192.168.3.254", port: int = 35037, update_interval_s: float = 0.05, timeout_s: float = 0.5, travel_margin_s=1.0):
         """
         Args:
             mgr (WiFiManager): WiFi manager to be used to connect
@@ -74,6 +74,7 @@ class Lift:
         self.port = port
         self.update_interval_s = update_interval_s
         self.timeout_s = timeout_s
+        self.travel_margin_s = travel_margin_s
 
         # calibration variables
         self._time_up_s = None
@@ -144,14 +145,18 @@ class Lift:
     @property
     def hall_bottom(self):
         """Value of the bottom hall sensor."""
-
-        return gpio.input(self.hall_bottom_pin)
+        _hall_bottom = gpio.input(self.hall_bottom_pin)
+        if _hall_bottom:
+            logger.info("Reached bottom hall sensor.")
+        return _hall_bottom
 
     @property
     def hall_top(self):
         """Value of the top hall sensor."""
-
-        return gpio.input(self.hall_top_pin)
+        _hall_top = gpio.input(self.hall_top_pin)
+        if _hall_top:
+            logger.info("Reached top hall sensor.")
+        return _hall_top
 
     def _check_limits(self, speed: int):
         """Check if the lift can move in the requested direction.
@@ -291,12 +296,12 @@ class Lift:
         if height_request >= self.height:
             logger.info("Requested height is high ({}m >= {}m maximum), moving to the top.".format(
                 height_request, self.height))
-            self._move(255)
+            self._move(255, self._time_up_s + self.travel_margin_s)
             return
         elif height_request <= 0.0:
             logger.info("Request height is low ({}m <= 0m), moving to the bottom.".format(
                 height_request))
-            self._move(-255)
+            self._move(-255, self._time_down_s + self.travel_margin_s)
             return
 
         # compute travel distance and duration
@@ -332,7 +337,7 @@ class Lift:
 
         logger.info("moving lift to top")
         self._time_up_s = self._move(255)
-        logger.info("goint back to bottom")
+        logger.info("going back to bottom")
         self._time_down_s = self._move(-255)
 
         logger.info("calibration finished, {}s to the top, {}s back to bottom".format(
