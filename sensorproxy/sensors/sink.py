@@ -34,7 +34,10 @@ class Sink(Sensor):
             return
 
         logger.info("Sending {} to InfluxDB".format(file_path))
-        influx.submit_file(file_path, id, hostname)
+        try:
+            influx.submit_file(file_path, id, hostname)
+        except Exception as e:
+            logger.warn("Submitting {} failed: {}".format(file_path, e))
 
     def record(self, *args, influx_publish: bool = True, ** kwargs):
         if not os.path.isdir(self.input_directory):
