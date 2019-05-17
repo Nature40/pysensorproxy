@@ -46,6 +46,28 @@ class PiNoirCamera(PiCamera):
 
 @register_sensor
 class IRProCamera(PiCamera):
+    """Special extension for IR Pro cameras with switchable IR Filter
+
+    The IR filter on the IR Pro Cameras are controlled by pin used for the 
+    camera led in the first versions of the pi camera. 
+
+    Usually the led can be deactivated by setting matching boot options, 
+    e.g., `disable_camera_led=1`. This option is discontinued in newer 
+    versions of raspbian.
+
+    Another method of deactivating the IR filter is, to manually set the led
+    gpio, usually supported by raspistill and the python picamera library. 
+    Since the Raspberry Pi 3 B has Bluetooth, there where no GPIOs left, thus
+    the led was re-routed to GPIO expander: https://picamera.readthedocs.io/en/release-1.13/api_camera.html?highlight=led#picamera.PiCamera.led
+
+    The method implemented here, is to manually set the led pin using sysfs.
+    For this method, one has to find out the gpio the led is connected to, which
+    is achievable looking at the rpi firmware blob: https://github.com/raspberrypi/firmware/blob/master/extra/dt-blob.dts
+    When searching for `CAMERA_0_LED`, the different GPIOs become visible,
+    the offset for external GPIOs is 128, so an external GPIO 6 becomes 
+    GPIO 134.
+    """
+
     def __init__(self, *args, cam_led: int = 134, **kwargs):
         super().__init__(*args, **kwargs)
 
