@@ -1,21 +1,12 @@
 import csv
 import os
+import logging
 
 from collections import namedtuple
 from influxdb import InfluxDBClient
 from typing import List
 
-
-class WrongFilePath(Exception):
-    pass
-
-
-class UnCorrectContent(Exception):
-    pass
-
-
-class WrongLength(Exception):
-    pass
+logger = logging.getLogger(__name__)
 
 
 Measurement = namedtuple(
@@ -77,10 +68,6 @@ class InfluxAPI():
 
         :param measurement: <Measurement> single measurement
         """
-        # if measurement.id is None:
-        #     measurement = measurement._replace(id=self.proxy.id)
-        # if measurement.hostname is None:
-        #     measurement = measurement._replace(hostname=self.proxy.hostname)
 
         self.__write_list_of_measurements([measurement])
 
@@ -92,8 +79,6 @@ class InfluxAPI():
         :return:
         """
         measurements = []
-        if not os.path.exists(file_path):
-            raise WrongFilePath("{} does not exist".format(file_path))
 
         with open(file_path, 'r') as csv_file:
             csv_reader = csv.reader(csv_file, delimiter=delimiter)

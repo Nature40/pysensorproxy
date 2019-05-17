@@ -119,7 +119,10 @@ class LogSensor(Sensor):
                     height=str(height_m))
 
                 logger.info("Publishing {} to Influx".format(measurement))
-                self.proxy.influx.submit_measurement(measurement)
+                try:
+                    self.proxy.influx.submit_measurement(measurement)
+                except Exception as e:
+                    logger.warn("Publishing on infux failed: {}".format(e))
 
         return file_path
 
