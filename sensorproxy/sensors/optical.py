@@ -1,6 +1,6 @@
 import time
 import logging
-import subprocess
+import os
 
 import picamera
 from pytimeparse import parse as parse_time
@@ -46,19 +46,16 @@ class PiNoirCamera(PiCamera):
 
 @register_sensor
 class IRProCamera(PiCamera):
-    def __init__(self, *args, img_format: str, cam_led: int = 134, **kwargs):
-        super().__init__(img_format, *args, **kwargs)
+    def __init__(self, *args, cam_led: int = 134, **kwargs):
+        super().__init__(*args, **kwargs)
 
         self.cam_led = int(cam_led)
+        self.cam_led_path = "/sys/class/gpio/gpio{}/value".format(self.cam_led)
 
         # export the requested gpio port
-        p = subprocess.Popen(["gpio", "export", str(self.cam_led), "output"])
-        p.wait()
-        if p.returncode != 0:
-            logger.warn(
-                "GPIO {} (IR filter switch) could not be exported.".format(self.cam_led))
-
-        self.cam_led_path = "/sys/class/gpio/gpio{}/value".format(self.cam_led)
+        if not os.path.exists(self.cam_led_path):
+            with open("/sys/class/gpio/export", "a") as gpio_export_file:
+                gpio_export_file.write(str(self.cam_led))
 
     def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, *args, **kwargs):
         adjust_time_s = parse_time(adjust_time)
