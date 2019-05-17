@@ -45,10 +45,10 @@ class PiNoirCamera(PiCamera):
 
 
 @register_sensor
-class IRProCamera(PiCamera):
-    """Special extension for IR Pro cameras with switchable IR Filter
+class IRCutCamera(PiCamera):
+    """Special extension for IR Cut cameras with switchable IR Filter
 
-    The IR filter on the IR Pro Cameras are controlled by pin used for the 
+    The IR filter on the IR Cut Cameras are controlled by pin used for the 
     camera led in the first versions of the pi camera. 
 
     Usually the led can be deactivated by setting matching boot options, 
@@ -82,7 +82,7 @@ class IRProCamera(PiCamera):
     def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, *args, **kwargs):
         adjust_time_s = parse_time(adjust_time)
 
-        logger.debug("Reading IrProCamera with {}x{} for {}s".format(
+        logger.debug("Reading IrCutCamera with {}x{} for {}s".format(
             res_X, res_Y, adjust_time_s))
 
         try:
