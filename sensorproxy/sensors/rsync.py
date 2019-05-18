@@ -37,7 +37,7 @@ class RsyncSender(LogSensor):
             if sensor == self:
                 continue
 
-            sensor.lock.acquire()
+            sensor._lock.acquire()
 
         if self.proxy.wifi_mgr:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
@@ -66,6 +66,6 @@ class RsyncSender(LogSensor):
             sensor.refresh()
             if sensor == self:
                 continue
-            sensor.lock.release()
+            sensor._lock.release()
 
         return [p.returncode]

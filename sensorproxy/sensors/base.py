@@ -26,7 +26,7 @@ class Sensor:
         self.proxy = proxy
         self.name = name
 
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         super().__init__()
 
     @abstractmethod
@@ -93,8 +93,14 @@ class LogSensor(Sensor):
             csv_file.flush()
 
     def record(self, *args, **kwargs):
-        ts = Sensor.time_repr()
-        reading = self._read(*args, **kwargs)
+        logger.info("Requesting access to {}".format(self.name))
+        self._lock.acquire()
+        try:
+            ts = Sensor.time_repr()
+            reading = self._read(*args, **kwargs)
+        finally:
+            logger.info("Releasing access to {}".format(self.name))
+            self._lock.release()
         self._publish(ts, reading, *args, **kwargs)
 
     def _publish(self, ts, reading, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
@@ -135,7 +141,6 @@ class FileSensor(Sensor):
 
         super().__init__(*args, **kwargs)
         self.file_ext = file_ext
-        self.records = []
 
     def get_file_path(self, height_m: float = None):
         """Generated file path for a sensor reading."""
@@ -164,11 +169,15 @@ class FileSensor(Sensor):
         pass
 
     def record(self, *args, height_m: float = None, **kwargs):
-        file_path = self.get_file_path(height_m=height_m)
+        logger.info("Requesting access to {}".format(self.name))
+        self._lock.acquire()
+        try:
+            file_path = self.get_file_path(height_m=height_m)
+            self._read(file_path, *args, **kwargs)
+        finally:
+            logger.info("Releasing access to {}".format(self.name))
+            self._lock.release()
 
-        self._read(file_path, *args, **kwargs)
-
-        self.records.append(os.path.split(file_path)[1])
         return file_path
 
 

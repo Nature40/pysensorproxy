@@ -82,7 +82,7 @@ class Lift:
         self._current_height_m = None
 
         # runtime variables
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         self._sock = None
         self._current_speed = None
         self._last_response_ts = None
@@ -106,7 +106,7 @@ class Lift:
         """
 
         logger.debug("Requesting lift access.")
-        self.lock.acquire()
+        self._lock.acquire()
 
         if self.mgr:
             logger.info("connecting to '{}'".format(self.wifi.ssid))
@@ -140,7 +140,7 @@ class Lift:
             self.mgr.disconnect()
 
         logger.debug("Releasing lift access.")
-        self.lock.release()
+        self._lock.release()
 
     @property
     def hall_bottom(self):

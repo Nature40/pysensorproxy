@@ -104,7 +104,7 @@ class WiFiManager:
 
         self.interface = interface
 
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         self.wpa_supplicant = None
         self._start_ap()
 
@@ -128,7 +128,7 @@ class WiFiManager:
         """
 
         logger.info("requesting wifi access...")
-        self.lock.acquire()
+        self._lock.acquire()
 
         logger.info("onnecting to wifi '{}'".format(wifi.ssid))
         if self.wpa_supplicant != None:
@@ -150,7 +150,7 @@ class WiFiManager:
             self.wpa_supplicant = None
 
             self._start_ap()
-            self.lock.release()
+            self._lock.release()
 
             logger.error("wifi connection failed: {}".format(e))
             raise WiFiConnectionError(e)
@@ -171,7 +171,7 @@ class WiFiManager:
         logger.info("wifi disconnected")
 
         self._start_ap()
-        self.lock.release()
+        self._lock.release()
 
 
 if __name__ == "__main__":

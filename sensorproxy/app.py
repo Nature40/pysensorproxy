@@ -172,10 +172,6 @@ class SensorProxy:
         logger.info("Running metering {}".format(name))
 
         sensors = [self.sensors[name] for name in metering["sensors"]]
-        for sensor in sensors:
-            logger.debug("Requesting access to {}.".format(sensor.name))
-            sensor.lock.acquire()
-            logger.debug("Got access to {}.".format(sensor.name))
 
         if (not "heights" in metering) or (self.lift == None) or test:
             height = self.lift._current_height_m if self.lift else None
@@ -205,10 +201,6 @@ class SensorProxy:
                 logger.error("Error in lift connection: {}".format(e))
                 self.lift.disconnect()
                 self._record_sensors_threaded(metering["sensors"], test=test)
-
-        for sensor in sensors:
-            logger.debug("Releasing access to {}.".format(sensor.name))
-            sensor.lock.release()
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
         meter_threads = []
