@@ -79,7 +79,6 @@ class LogSensor(Sensor):
         return self.__file_path
 
     def refresh(self):
-        self.lock.acquire()
         # basic file format cst_00001_moon-cam-2019-05-07T203027
         file_name = "{}-{}-{}.csv".format(self.proxy.id,
                                           self.name, Sensor.time_repr())
@@ -92,8 +91,6 @@ class LogSensor(Sensor):
             writer = csv.writer(csv_file)
             writer.writerow(["Time", "Height (m)"] + self._header)
             csv_file.flush()
-
-        self.lock.release()
 
     def record(self, *args, **kwargs):
         ts = Sensor.time_repr()

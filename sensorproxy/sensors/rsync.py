@@ -32,6 +32,13 @@ class RsyncSender(LogSensor):
         return cmd
 
     def _read(self, *args, **kwargs):
+        logger.info("acquiring access to all sensors")
+        for sensor in self.proxy.sensors.values():
+            if sensor == self:
+                continue
+
+            sensor.lock.acquire()
+
         if self.proxy.wifi_mgr:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
             self.proxy.wifi_mgr.connect(self.wifi)
@@ -54,8 +61,11 @@ class RsyncSender(LogSensor):
 
         # Call refresh on each Sensor.
         # This will create new filenames for each FileSensor atm.
-        logger.info("refreshing sensors")
-        for _, sensor in self.proxy.sensors.items():
+        logger.info("releasing locks and refreshing sensors")
+        for sensor in self.proxy.sensors.values():
             sensor.refresh()
+            if sensor == self:
+                continue
+            sensor.lock.release()
 
         return [p.returncode]
