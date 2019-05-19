@@ -93,13 +93,13 @@ class LogSensor(Sensor):
             csv_file.flush()
 
     def record(self, *args, **kwargs):
-        logger.info("Requesting access to {}".format(self.name))
+        logger.info("acquire access to {}".format(self.name))
         self._lock.acquire()
         try:
             ts = Sensor.time_repr()
             reading = self._read(*args, **kwargs)
         finally:
-            logger.info("Releasing access to {}".format(self.name))
+            logger.info("release access to {}".format(self.name))
             self._lock.release()
         self._publish(ts, reading, *args, **kwargs)
 
@@ -169,13 +169,13 @@ class FileSensor(Sensor):
         pass
 
     def record(self, *args, height_m: float = None, **kwargs):
-        logger.info("Requesting access to {}".format(self.name))
+        logger.info("acquire access to {}".format(self.name))
         self._lock.acquire()
         try:
             file_path = self.get_file_path(height_m=height_m)
             self._read(file_path, *args, **kwargs)
         finally:
-            logger.info("Releasing access to {}".format(self.name))
+            logger.info("release access to {}".format(self.name))
             self._lock.release()
 
         return file_path

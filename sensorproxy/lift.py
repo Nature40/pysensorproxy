@@ -105,7 +105,7 @@ class Lift:
             LiftSocketCommunicationException: if no response from lift on initial connect
         """
 
-        logger.debug("Requesting lift access.")
+        logger.debug("acquire lift access")
         self._lock.acquire()
 
         if self.mgr:
@@ -139,7 +139,7 @@ class Lift:
         if self.mgr:
             self.mgr.disconnect()
 
-        logger.debug("Releasing lift access.")
+        logger.debug("release lift access.")
         self._lock.release()
 
     @property
