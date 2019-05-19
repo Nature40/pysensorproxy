@@ -204,7 +204,6 @@ class Lift:
 
         self._check_limits(speed)
 
-        logger.debug("sending speed {}".format(speed))
         request = "speed {}".format(speed).encode()
         try:
             self._sock.sendto(request, (self.ip, self.port))
@@ -212,7 +211,7 @@ class Lift:
             raise _LiftSocketCommunicationException(
                 "Sending speed failed: {}".format(e))
 
-    def _recv_responses(self):
+    def _recv_responses(self, speed_request):
         """Receive latest responses from the connected lift.
 
         Raises:
@@ -230,12 +229,14 @@ class Lift:
             except BlockingIOError:
                 return
 
-            logger.debug("received '{}'".format(response.strip()))
             cmd, speed_response_str = response.split()
 
             if cmd == "set":
                 speed_response = int(speed_response_str)
                 self._current_speed = speed_response
+                if speed_request != speed_response:
+                    logger.info("Received speed ({}) does not match requested ({})".format(
+                        speed_response, speed_request))
             else:
                 raise _UnknownReponseException("Response: '{}'".format(cmd))
 
@@ -267,7 +268,7 @@ class Lift:
 
             try:
                 self._send_speed(speed)
-                self._recv_responses()
+                self._recv_responses(speed)
                 self._check_timeout()
 
             except LiftConnectionException as e:
