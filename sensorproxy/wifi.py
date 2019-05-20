@@ -127,7 +127,7 @@ class WiFiManager:
             timeout (int): timeout for dhclient
         """
 
-        logger.info("acquire wifi access")
+        logger.debug("acquire wifi access")
         self._lock.acquire()
 
         logger.info("connecting to wifi '{}'".format(wifi.ssid))
@@ -151,7 +151,7 @@ class WiFiManager:
 
             self._start_ap()
 
-            logger.info("release wifi access")
+            logger.debug("release wifi access")
             self._lock.release()
 
             logger.error("wifi connection failed: {}".format(e))
@@ -173,7 +173,7 @@ class WiFiManager:
         logger.info("wifi disconnected")
 
         self._start_ap()
-        logger.info("release wifi access")
+        logger.debug("release wifi access")
         self._lock.release()
 
 

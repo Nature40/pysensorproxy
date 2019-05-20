@@ -94,7 +94,7 @@ class LogSensor(Sensor):
             csv_file.flush()
 
     def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
-        logger.info("acquire access to {}".format(self.name))
+        logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
         try:
             for num in range(count):
@@ -105,7 +105,7 @@ class LogSensor(Sensor):
                 if num == count - 1:
                     time.sleep(parse_time(delay))
         finally:
-            logger.info("release access to {}".format(self.name))
+            logger.debug("release access to {}".format(self.name))
             self._lock.release()
 
     def _publish(self, ts, reading, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
@@ -174,7 +174,7 @@ class FileSensor(Sensor):
         pass
 
     def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", **kwargs):
-        logger.info("acquire access to {}".format(self.name))
+        logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
 
         try:
@@ -187,7 +187,7 @@ class FileSensor(Sensor):
                     time.sleep(parse_time(delay))
 
         finally:
-            logger.info("release access to {}".format(self.name))
+            logger.debug("release access to {}".format(self.name))
             self._lock.release()
 
         return file_path

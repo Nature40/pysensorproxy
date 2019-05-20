@@ -80,6 +80,10 @@ class SensorProxy:
         handler = logging.FileHandler(log_path)
         handler.setLevel(log_level_num)
 
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        handler.setFormatter(formatter)
+
         app_logger = logging.getLogger("sensorproxy")
         app_logger.addHandler(handler)
         logger.info("local {} log is written to {}".format(

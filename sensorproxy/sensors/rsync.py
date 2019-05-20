@@ -57,7 +57,7 @@ class RsyncSender(LogSensor):
 
         # Call refresh on each Sensor.
         # This will create new filenames for each FileSensor atm.
-        logger.info("release locks and refresh sensors")
+        logger.debug("release locks and refresh sensors")
         for sensor in self.proxy.sensors.values():
             sensor.refresh()
             if sensor == self:
