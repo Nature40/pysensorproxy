@@ -47,11 +47,11 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
-        self._init_identifiers(config)
         self._init_storage(**config)
         self._init_local_log(**config)
-        self._init_optionals(config)
-        self._init_sensors(config["sensors"])
+        self._init_identifiers(**config)
+        self._init_optionals(**config)
+        self._init_sensors(**config)
 
         logger.info("loading metering file '{}'".format(metering_path))
         with open(metering_path) as metering_file:
@@ -62,11 +62,20 @@ class SensorProxy:
         if not test:
             self._reset_lift()
 
-    def _init_identifiers(self, config):
-        self.hostname = platform.node()
-        self.id = config.get("id", None)
-        logger.info("Running for id '{}' on host '{}'.".format(
-            self.id, self.hostname))
+    def _init_storage(self, storage_path=".", **kwargs):
+        self.storage_path = storage_path
+        try:
+            os.makedirs(storage_path)
+        except FileExistsError:
+            pass
+
+        self.storage_path_node = os.path.join(storage_path, self.hostname)
+        try:
+            os.makedirs(self.storage_path_node)
+        except FileExistsError:
+            pass
+
+        logger.info("using storage at '{}'".format(storage_path))
 
     def _init_local_log(self, storage_path=".", log_level="INFO", **kwargs):
         if log_level.upper() not in logging._nameToLevel:
@@ -89,46 +98,38 @@ class SensorProxy:
         logger.info("local {} log is written to {}".format(
             log_level, log_path))
 
-    def _init_storage(self, storage_path=".", **kwargs):
-        self.storage_path = storage_path
-        try:
-            os.makedirs(storage_path)
-        except FileExistsError:
-            pass
+    def _init_identifiers(self, *args, id: str = None, **kwargs):
+        self.hostname = platform.node()
+        if id:
+            logger.warn("Id is missing for this sensorbox.")
+        self.id = id
+        logger.info("Running for id '{}' on host '{}'.".format(
+            self.id, self.hostname))
 
-        self.storage_path_node = os.path.join(storage_path, self.hostname)
-        try:
-            os.makedirs(self.storage_path_node)
-        except FileExistsError:
-            pass
+    def _init_optionals(self, *args, wifi=None, lift=None, influx=None, **kwargs):
+        self.wifi_mgr = None
+        if wifi:
+            self.wifi_mgr = WiFiManager(**wifi)
+            logger.info("managing wifi '{}'".format(self.wifi_mgr.interface))
 
-        logger.info("using storage at '{}'".format(storage_path))
+        self.lift = None
+        if lift:
+            self.lift = Lift(self.wifi_mgr, **lift)
+            logger.info("using lift '{}'".format(self.lift.wifi.ssid))
 
-    def _init_sensors(self, sensor_config):
+        self.influx = None
+        if influx:
+            self.influx = InfluxAPI(self, **influx)
+            logger.info("using influx at '{}'".format(influx["host"]))
+
+    def _init_sensors(self, *args, sensors={}, **kwargs):
         self.sensors = {}
-        for name, params in sensor_config.items():
+        for name, params in sensors.items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
             sensor = sensor_cls(self, name, **params)
             self.sensors[name] = sensor
 
             logger.info("added sensor '{}' ({})".format(name, params["type"]))
-
-    def _init_optionals(self, config):
-        self.wifi_mgr = None
-        if "wifi" in config:
-            self.wifi_mgr = WiFiManager(**config["wifi"])
-            logger.info("managing wifi '{}'".format(self.wifi_mgr.interface))
-
-        self.lift = None
-        if "lift" in config:
-            self.lift = Lift(self.wifi_mgr, **config["lift"])
-            logger.info("using lift '{}'".format(self.lift.wifi.ssid))
-
-        self.influx = None
-        if "influx" in config:
-            self.influx = InfluxAPI(self, **config["influx"])
-            logger.info("using influx at '{}'".format(
-                config["influx"]["host"]))
 
     def _reset_lift(self):
         if not self.lift:
