@@ -192,8 +192,6 @@ class SensorProxy:
     def _run_metering(self, name, metering, test=False):
         logger.info("Running metering {}".format(name))
 
-        sensors = [self.sensors[name] for name in metering["sensors"]]
-
         if (not "heights" in metering) or (self.lift == None) or test:
             height = self.lift._current_height_m if self.lift else None
             self._record_sensors_threaded(metering["sensors"], test=test)

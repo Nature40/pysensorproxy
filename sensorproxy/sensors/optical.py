@@ -69,10 +69,10 @@ class IRCutCamera(PiCamera):
     GPIO 134.
     """
 
-    def __init__(self, *args, cam_led: int = 6, gpiochip_label: str = "raspberrypi-exp-gpio", **kwargs):
+    def __init__(self, *args, cam_led: int = 6, gpiochip_labels: [str] = ["raspberrypi-exp-gpio", "brcmexp-gpio"], **kwargs):
         super().__init__(*args, **kwargs)
 
-        gpio_base = self.__gpiochip_label_base(gpiochip_label)
+        gpio_base = self.__gpiochip_label_base(gpiochip_labels)
         self.cam_gpio = gpio_base + cam_led
         self.cam_gpio_path = "/sys/class/gpio/gpio{}/value".format(
             self.cam_gpio)
@@ -83,19 +83,19 @@ class IRCutCamera(PiCamera):
                 gpio_export_file.write(str(self.cam_gpio))
 
     @staticmethod
-    def __gpiochip_label_base(gpiochip_label):
+    def __gpiochip_label_base(gpiochip_labels):
         for gpiochip_path in glob.glob("/sys/class/gpio/gpiochip*/"):
             with open(os.path.join(gpiochip_path, "label"), "r") as gpiochip_label_file:
                 label = gpiochip_label_file.readline().strip()
 
-            if gpiochip_label == label:
+            if label in gpiochip_labels:
                 with open(os.path.join(gpiochip_path, "base"), "r") as gpiochip_base_file:
                     base = int(gpiochip_base_file.readline())
 
                 return base
 
         raise SensorNotAvailableException(
-            "Could not find gpio base for '{}'".format(gpiochip_label))
+            "Could not find gpio base for {}".format(gpiochip_labels))
 
     def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, *args, **kwargs):
         adjust_time_s = parse_time(adjust_time)
