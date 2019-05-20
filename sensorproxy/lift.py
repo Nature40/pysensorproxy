@@ -124,7 +124,7 @@ class Lift:
             if start_ts + timeout_s < time.time():
                 raise _LiftSocketCommunicationException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
-            self._recv_responses()
+            self._recv_responses(0)
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
@@ -298,11 +298,13 @@ class Lift:
             logger.info("Requested height is high ({}m >= {}m maximum), moving to the top.".format(
                 height_request, self.height))
             self._move(255, self._time_up_s + self.travel_margin_s)
+            self._current_height_m = height_request
             return
         elif height_request <= 0.0:
             logger.info("Request height is low ({}m <= 0m), moving to the bottom.".format(
                 height_request))
             self._move(-255, self._time_down_s + self.travel_margin_s)
+            self._current_height_m = height_request
             return
 
         # compute travel distance and duration
