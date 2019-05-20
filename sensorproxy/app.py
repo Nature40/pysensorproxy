@@ -40,9 +40,6 @@ def run_threaded(job_func, *args):
 
 
 class SensorProxy:
-    class Metering:
-        pass
-
     def __init__(self, config_path, metering_path, test=False):
         self.config_path = config_path
 
@@ -52,6 +49,7 @@ class SensorProxy:
 
         self._init_identifiers(config)
         self._init_storage(**config)
+        self._init_local_log(**config)
         self._init_optionals(config)
         self._init_sensors(config["sensors"])
 
@@ -67,6 +65,25 @@ class SensorProxy:
     def _init_identifiers(self, config):
         self.hostname = platform.node()
         self.id = config.get("id", None)
+        logger.info("Running for id '{}' on host '{}'.".format(
+            self.id, self.hostname))
+
+    def _init_local_log(self, storage_path=".", log_level="INFO", **kwargs):
+        if log_level.upper() not in logging._nameToLevel:
+            logger.warn("log level '{}' is not in {}, defaulting to INFO".format(
+                log_level, logging._nameToLevel.keys()))
+            log_level = "INFO"
+
+        log_level_num = logging._nameToLevel[log_level.upper()]
+        log_path = os.path.join(storage_path, "sensorproxy.txt")
+
+        handler = logging.FileHandler(log_path)
+        handler.setLevel(log_level_num)
+
+        app_logger = logging.getLogger("sensorproxy")
+        app_logger.addHandler(handler)
+        logger.info("local {} log is written to {}".format(
+            log_level, log_path))
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path
@@ -90,20 +107,24 @@ class SensorProxy:
             sensor = sensor_cls(self, name, **params)
             self.sensors[name] = sensor
 
-            logger.info("added sensor {} ({})".format(name, params["type"]))
+            logger.info("added sensor '{}' ({})".format(name, params["type"]))
 
     def _init_optionals(self, config):
         self.wifi_mgr = None
         if "wifi" in config:
             self.wifi_mgr = WiFiManager(**config["wifi"])
+            logger.info("managing wifi '{}'".format(self.wifi_mgr.interface))
 
         self.lift = None
         if "lift" in config:
             self.lift = Lift(self.wifi_mgr, **config["lift"])
+            logger.info("using lift '{}'".format(self.lift.wifi.ssid))
 
         self.influx = None
         if "influx" in config:
             self.influx = InfluxAPI(self, **config["influx"])
+            logger.info("using influx at '{}'".format(
+                config["influx"]["host"]))
 
     def _reset_lift(self):
         if not self.lift:
