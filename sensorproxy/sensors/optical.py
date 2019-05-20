@@ -1,6 +1,7 @@
 import time
 import logging
 import os
+import glob
 
 import picamera
 from pytimeparse import parse as parse_time
@@ -68,16 +69,33 @@ class IRCutCamera(PiCamera):
     GPIO 134.
     """
 
-    def __init__(self, *args, cam_led: int = 134, **kwargs):
+    def __init__(self, *args, cam_led: int = 6, gpiochip_label: str = "raspberrypi-exp-gpio", **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.cam_led = int(cam_led)
-        self.cam_led_path = "/sys/class/gpio/gpio{}/value".format(self.cam_led)
+        gpio_base = self.__gpiochip_label_base(gpiochip_label)
+        self.cam_gpio = gpio_base + cam_led
+        self.cam_gpio_path = "/sys/class/gpio/gpio{}/value".format(
+            self.cam_gpio)
 
         # export the requested gpio port
-        if not os.path.exists(self.cam_led_path):
+        if not os.path.exists(self.cam_gpio_path):
             with open("/sys/class/gpio/export", "a") as gpio_export_file:
-                gpio_export_file.write(str(self.cam_led))
+                gpio_export_file.write(str(self.cam_gpio))
+
+    @staticmethod
+    def __gpiochip_label_base(gpiochip_label):
+        for gpiochip_path in glob.glob("/sys/class/gpio/gpiochip*/"):
+            with open(os.path.join(gpiochip_path, "label"), "r") as gpiochip_label_file:
+                label = gpiochip_label_file.readline().strip()
+
+            if gpiochip_label == label:
+                with open(os.path.join(gpiochip_path, "base"), "r") as gpiochip_base_file:
+                    base = int(gpiochip_base_file.readline())
+
+                return base
+
+        raise SensorNotAvailableException(
+            "Could not find gpio base for '{}'".format(gpiochip_label))
 
     def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, *args, **kwargs):
         adjust_time_s = parse_time(adjust_time)
@@ -91,7 +109,7 @@ class IRCutCamera(PiCamera):
                 camera.start_preview()
 
                 # set cam gpio to the matching value
-                with open(self.cam_led_path, "a") as gpio_file:
+                with open(self.cam_gpio_path, "a") as gpio_file:
                     gpio_file.write(str(int(filter_ir)))
                     time.sleep(2)
 
