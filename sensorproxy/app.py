@@ -47,9 +47,9 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
+        self._init_identifiers(**config)
         self._init_storage(**config)
         self._init_local_log(**config)
-        self._init_identifiers(**config)
         self._init_optionals(**config)
         self._init_sensors(**config)
 
@@ -61,6 +61,14 @@ class SensorProxy:
 
         if not test:
             self._reset_lift()
+
+    def _init_identifiers(self, *args, id: str = None, **kwargs):
+        self.hostname = platform.node()
+        if id:
+            logger.warn("Id is missing for this sensorbox.")
+        self.id = id
+        logger.info("Running for id '{}' on host '{}'.".format(
+            self.id, self.hostname))
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path
@@ -97,14 +105,6 @@ class SensorProxy:
         app_logger.addHandler(handler)
         logger.info("local {} log is written to {}".format(
             log_level, log_path))
-
-    def _init_identifiers(self, *args, id: str = None, **kwargs):
-        self.hostname = platform.node()
-        if id:
-            logger.warn("Id is missing for this sensorbox.")
-        self.id = id
-        logger.info("Running for id '{}' on host '{}'.".format(
-            self.id, self.hostname))
 
     def _init_optionals(self, *args, wifi=None, lift=None, influx=None, **kwargs):
         self.wifi_mgr = None
