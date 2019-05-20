@@ -25,7 +25,7 @@ class CPU(LogSensor):
         logger.debug("Reading CPU temperature using gpiozero")
         cpu_temp = gpiozero.CPUTemperature().temperature
 
-        logger.degug("Reading uptime from /proc/uptime")
+        logger.debug("Reading uptime from /proc/uptime")
         with open('/proc/uptime', 'r') as uptime_file:
             uptime = float(uptime_file.readline().split()[0])
 
