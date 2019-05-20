@@ -180,6 +180,8 @@ class FileSensor(Sensor):
         try:
             for num in range(count):
                 file_path = self.get_file_path(height_m=height_m)
+                logger.debug(
+                    "running {} reading {}/{}, {} delay.".format(self.name, num, count, delay))
                 self._read(file_path, *args, **kwargs)
                 if num == count - 1:
                     time.sleep(parse_time(delay))
