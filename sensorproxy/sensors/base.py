@@ -7,6 +7,7 @@ import threading
 
 from abc import ABC, abstractmethod
 from typing import Type
+from pytimeparse import parse as parse_time
 
 from sensorproxy.influx_api import InfluxAPI, Measurement
 
@@ -30,7 +31,7 @@ class Sensor:
         super().__init__()
 
     @abstractmethod
-    def record(self, *args, height_m: float = None, **kwargs):
+    def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", **kwargs):
         """Read the sensor and write the value. """
 
         pass
@@ -92,16 +93,20 @@ class LogSensor(Sensor):
             writer.writerow(["Time", "Height (m)"] + self._header)
             csv_file.flush()
 
-    def record(self, *args, **kwargs):
+    def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
         logger.info("acquire access to {}".format(self.name))
         self._lock.acquire()
         try:
-            ts = Sensor.time_repr()
-            reading = self._read(*args, **kwargs)
+            for num in range(count):
+                ts = Sensor.time_repr()
+                reading = self._read(*args, **kwargs)
+                self._publish(ts, reading, *args, **kwargs)
+
+                if num == count - 1:
+                    time.sleep(parse_time(delay))
         finally:
             logger.info("release access to {}".format(self.name))
             self._lock.release()
-        self._publish(ts, reading, *args, **kwargs)
 
     def _publish(self, ts, reading, *args, height_m: float = None, influx_publish: bool = False, **kwargs):
         file_path = self.get_file_path()
@@ -168,12 +173,17 @@ class FileSensor(Sensor):
 
         pass
 
-    def record(self, *args, height_m: float = None, **kwargs):
+    def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", **kwargs):
         logger.info("acquire access to {}".format(self.name))
         self._lock.acquire()
+
         try:
-            file_path = self.get_file_path(height_m=height_m)
-            self._read(file_path, *args, **kwargs)
+            for num in range(count):
+                file_path = self.get_file_path(height_m=height_m)
+                self._read(file_path, *args, **kwargs)
+                if num == count - 1:
+                    time.sleep(parse_time(delay))
+
         finally:
             logger.info("release access to {}".format(self.name))
             self._lock.release()
