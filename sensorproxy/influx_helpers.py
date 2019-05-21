@@ -17,6 +17,9 @@ def __bool(string):
 
 
 def __autocast(string):
+    if not isinstance(string, str):
+        return string
+
     for cast in (__bool, int, float):
         try:
             return cast(string)
