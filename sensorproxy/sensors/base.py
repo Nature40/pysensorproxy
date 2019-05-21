@@ -89,7 +89,7 @@ class LogSensor(Sensor):
     """Class for sensors logging simple values per record."""
 
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, file_ext="csv", **kwargs)
         self.refresh()
 
     @abstractmethod
