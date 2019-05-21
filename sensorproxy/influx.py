@@ -44,7 +44,7 @@ def _influx_seperate_header(header: [], tag_prefix: str):
                 if(name.startswith(tag_prefix))]
 
     logger.debug("Parsed csv header; values: {}, tags: {}".format(
-        tag_cols, val_cols))
+        val_cols, tag_cols))
 
     return val_cols, tag_cols
 
