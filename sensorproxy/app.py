@@ -14,6 +14,7 @@ import yaml
 
 import schedule
 from pytimeparse import parse as parse_time
+from influxdb import InfluxDBClient
 
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
@@ -25,8 +26,6 @@ import sensorproxy.sensors.rsync
 import sensorproxy.sensors.sink
 import sensorproxy.sensors.system
 
-
-from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
 from sensorproxy.wifi import WiFiManager
 
@@ -119,7 +118,7 @@ class SensorProxy:
 
         self.influx = None
         if influx:
-            self.influx = InfluxAPI(self, **influx)
+            self.influx = InfluxDBClient(**influx)
             logger.info("using influx at '{}'".format(influx["host"]))
 
     def _init_sensors(self, *args, sensors={}, **kwargs):

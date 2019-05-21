@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Type
 from pytimeparse import parse as parse_time
 
-from sensorproxy.influx_api import InfluxAPI, Measurement
+from sensorproxy.influx_helpers import influx_process
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,10 @@ class LogSensor(Sensor):
         pass
 
     @property
+    def _fixed_header(self):
+        return ["Time (s)", ".Height (m)"]
+
+    @property
     @abstractmethod
     def _header(self):
         """Header of the sensor readings."""
@@ -80,9 +84,9 @@ class LogSensor(Sensor):
         return self.__file_path
 
     def refresh(self):
-        # basic file format cst_00001_moon-cam-2019-05-07T203027
-        file_name = "{}-{}-{}.csv".format(self.proxy.id,
-                                          self.name, Sensor.time_repr())
+        # basic file format cst_00001_moon-PiCamera-cam-2019-05-07T203027
+        file_name = "{}-{}-{}-{}.csv".format(self.proxy.id, self.__class__.__name__,
+                                             self.name, Sensor.time_repr())
 
         # generate and return full path
         self.__file_path = os.path.join(
@@ -90,7 +94,7 @@ class LogSensor(Sensor):
 
         with open(self.get_file_path(), "a") as csv_file:
             writer = csv.writer(csv_file)
-            writer.writerow(["Time", "Height (m)"] + self._header)
+            writer.writerow(self._fixed_header + self._header)
             csv_file.flush()
 
     def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
@@ -117,20 +121,21 @@ class LogSensor(Sensor):
             csv_file.flush()
 
         if self.proxy.influx is not None and influx_publish:
-            for sensor, value in zip(self._header, reading):
-                measurement = Measurement(
-                    id=self.proxy.id,
-                    hostname=self.proxy.hostname,
-                    sensor=sensor,
-                    timestamp=ts,
-                    value=str(value),
-                    height=str(height_m))
+            logger.info("Publishing {} metering to Influx".format(self.name))
 
-                logger.info("Publishing {} to Influx".format(measurement))
-                try:
-                    self.proxy.influx.submit_measurement(measurement)
-                except Exception as e:
-                    logger.warn("Publishing on infux failed: {}".format(e))
+            header = self._fixed_header + self._header
+            row = [ts, height_m] + reading
+
+            body = influx_process(self.__class__.__name__, header, row)
+            tags = {"hostname": self.proxy.hostname,
+                    "id": self.proxy.id,
+                    "sensor": self.name, }
+
+            try:
+                self.proxy.influx.write_points(
+                    points=[body], tags=tags, time_precision="s")
+            except Exception as e:
+                logger.warn("Publishing on infux failed: {}".format(e))
 
         return file_path
 
@@ -150,8 +155,8 @@ class FileSensor(Sensor):
     def get_file_path(self, height_m: float = None):
         """Generated file path for a sensor reading."""
         # basic file format cst_00001_moon-cam-2019-05-07T203027
-        file_name = "{}-{}-{}".format(self.proxy.id,
-                                      self.name, Sensor.time_repr())
+        file_name = "{}-{}-{}-{}".format(self.proxy.id, self.__class__.__name__,
+                                         self.name, Sensor.time_repr())
 
         # append height if available
         if height_m is not None:
