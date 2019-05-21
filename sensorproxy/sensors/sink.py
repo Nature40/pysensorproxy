@@ -1,9 +1,7 @@
 import os
 import logging
-from influxdb import InfluxDBClient
 
 from .base import register_sensor, Sensor, SensorNotAvailableException
-from sensorproxy.influx_helpers import influx_process_csv
 
 
 logger = logging.getLogger(__name__)
@@ -38,13 +36,14 @@ class Sink(Sensor):
         logger.info("Sending {} to InfluxDB".format(file_path))
 
         try:
-            points = influx_process_csv(file_path, _class)
-            tags = {"hostname": _hostname,
-                    "id": _id,
-                    "sensor": _sensor}
+            file_name = os.path.basename(file_path)
+            tags = self._parse_filename(file_name)
 
-            self.proxy.influx.write_points(
-                points=points, tags=tags, time_precision="s")
+            self.proxy.publish_csv(
+                csv_file=file_path,
+                _hostname=_hostname,
+                **tags,
+            )
         except Exception as e:
             logger.warn("Publishing on infux failed: {}".format(e))
 

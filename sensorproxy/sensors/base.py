@@ -45,12 +45,15 @@ class Sensor:
 
         return _filename_format.format(**locals())
 
-    # @staticmethod
-    # def _parse_filename(filename):
-    #     basename, _file_ext = filename.split(".")
-    #     metadata = basename.split("-")
-    #     _id, _class, _name = metadata[:3]
-    #     custom = metadata[3:]
+    @staticmethod
+    def _parse_filename(filename):
+        basename, _file_ext = filename.split(".")
+        metadata = basename.split("-")
+
+        tags = dict(zip(["_id", "_class", "_name"], metadata[:3]))
+        # TODO: Parse tags in custom headers, e.g. height for images
+
+        return tags
 
     @property
     def _header_start(self):
@@ -150,14 +153,15 @@ class LogSensor(Sensor):
         if self.proxy.influx and influx_publish:
             logger.info("Publishing {} metering to Influx".format(self.name))
 
-            body = influx_process(self.__class__.__name__, self.header, row)
-            tags = {"hostname": self.proxy.hostname,
-                    "id": self.proxy.id,
-                    "sensor": self.name, }
-
             try:
-                self.proxy.influx.write_points(
-                    points=[body], tags=tags, time_precision="s")
+                self.proxy.influx.publish(
+                    header=self.header,
+                    row=row,
+                    _class=self.__class__.__name__,
+                    _hostname=self.proxy.hostname,
+                    _id=self.proxy.id,
+                    _sensor=self.name,
+                )
             except Exception as e:
                 logger.warn("Publishing on infux failed: {}".format(e))
 

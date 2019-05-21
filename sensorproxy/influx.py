@@ -1,6 +1,9 @@
 import csv
 import logging
 
+
+from influxdb import InfluxDBClient
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,7 +31,7 @@ def __autocast(string):
     return string
 
 
-def _influx_seperate_header(header: [], tag_prefix: str = "."):
+def _influx_seperate_header(header: [], tag_prefix: str):
     header_list = list(enumerate(header))
 
     if not "time" in header_list[0][1].lower():
@@ -62,13 +65,13 @@ def _influx_construct_dict(measurement: str, row: [], val_cols: [(int, str)], ta
     return body
 
 
-def influx_process(measurement: str, header: [], row: [], tag_prefix="."):
+def _influx_process(measurement: str, header: [], row: [], tag_prefix: str):
     val_cols, tag_cols = _influx_seperate_header(header, tag_prefix=tag_prefix)
     body = _influx_construct_dict(measurement, row, val_cols, tag_cols)
     return body
 
 
-def influx_process_csv(csv_path: str, measurement: str, csv_delimiter=",", tag_prefix="."):
+def _influx_process_csv(csv_path: str, measurement: str, tag_prefix: str):
     """
 
     :param csv_path: <str> full qualified path to the csv file
@@ -79,7 +82,7 @@ def influx_process_csv(csv_path: str, measurement: str, csv_delimiter=",", tag_p
     """
 
     with open(csv_path, 'r') as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=csv_delimiter)
+        csv_reader = csv.reader(csv_file)
 
         # read and parse header: extract time, values and tags
         val_cols, tag_cols = _influx_seperate_header(
@@ -95,3 +98,33 @@ def influx_process_csv(csv_path: str, measurement: str, csv_delimiter=",", tag_p
         logger.debug("Read {} rows from '{}'".format(len(data), csv_path))
 
     return data
+
+
+class InfluxDBSensorClient(InfluxDBClient):
+    def __init__(self, *args, tag_prefix=".", **kwargs):
+        super().__init__(*args, **kwargs)
+        self.tag_prefix = tag_prefix
+
+    def publish(self, header: [str], row: [], _class: str, _hostname: str, _id: str, _sensor: str):
+        logger.info("Publishing {} metering to Influx".format(_sensor))
+
+        body = _influx_process(_class, header, row, self.tag_prefix)
+        tags = {
+            "hostname": _hostname,
+            "id": _id,
+            "sensor": _sensor,
+        }
+
+        self.write_points(points=[body], tags=tags, time_precision="s")
+
+    def publish_csv(self, csv_path: str, _class: str, _hostname: str, _id: str, _sensor: str):
+        logger.info("Sending {} to InfluxDB".format(csv_path))
+
+        points = _influx_process_csv(csv_path, _class, self.tag_prefix)
+        tags = {
+            "hostname": _hostname,
+            "id": _id,
+            "sensor": _sensor,
+        }
+
+        self.write_points(points=points, tags=tags, time_precision="s")
