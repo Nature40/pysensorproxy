@@ -22,7 +22,7 @@ class LoggingHandler(logging.Handler, LogSensor):
 
     @property
     def _header(self):
-        return ["Name", "Level", "Message"]
+        return [".Name", ".Level", "Message"]
 
     def record(self, *args, **kwargs):
         raise SensorNotAvailableException(

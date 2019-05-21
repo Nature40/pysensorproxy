@@ -18,7 +18,7 @@ class RsyncSender(LogSensor):
 
     @property
     def _header(self):
-        return ["RSync Status"]
+        return ["Status"]
 
     def _rsync_cmd(self):
         cmd = ["rsync", "-avz", "--remove-source-files", "--no-relative",
