@@ -57,7 +57,7 @@ class Sensor:
     @property
     def _header_start(self):
         if self.uses_height and self.proxy.lift:
-            return ["Time (s)", "Height (m)"]
+            return ["Time (s)", "#Height (m)"]
         return ["Time (s)"]
 
     _header_sensor = []

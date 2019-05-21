@@ -21,8 +21,8 @@ class LoggingHandler(logging.Handler, LogSensor):
         root.addHandler(self)
 
     _header_sensor = [
-        ".Name",
-        ".Level",
+        "#Name",
+        "#Level",
         "Message",
     ]
 

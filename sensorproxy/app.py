@@ -32,6 +32,10 @@ from sensorproxy.influx import InfluxDBSensorClient
 logger = logging.getLogger(__name__)
 
 
+class ConfigurationException(Exception):
+    pass
+
+
 def run_threaded(job_func, *args):
     job_thread = threading.Thread(target=job_func, args=args)
     job_thread.start()
@@ -62,8 +66,13 @@ class SensorProxy:
 
     def _init_identifiers(self, *args, id: str = None, **kwargs):
         self.hostname = platform.node()
-        if id:
-            logger.warn("Id is missing for this sensorbox.")
+        if not id:
+            raise ConfigurationException("Configuration file is missing an ID for this instance.")
+        
+        blacklist = "/-."
+        if any((c in set(blacklist)) for c in id):
+            raise ConfigurationException("The ID may not contain those characters: '{}'".format(blacklist))
+        
         self.id = id
         logger.info("Running for id '{}' on host '{}'.".format(
             self.id, self.hostname))
