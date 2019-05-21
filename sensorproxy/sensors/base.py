@@ -9,7 +9,6 @@ from abc import ABC, abstractmethod
 from typing import Type
 from pytimeparse import parse as parse_time
 
-from sensorproxy.influx_helpers import influx_process
 
 logger = logging.getLogger(__name__)
 
