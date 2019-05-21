@@ -17,7 +17,7 @@ class Sink(Sensor):
     """
 
     def __init__(self, *args, input_directory, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=False, **kwargs)
 
         # create input directory
         try:
@@ -93,6 +93,3 @@ class Sink(Sensor):
 
     def refresh(self):
         pass
-
-    def get_file_path(self):
-        return None

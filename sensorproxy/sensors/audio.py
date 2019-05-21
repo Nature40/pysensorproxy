@@ -22,7 +22,7 @@ class Microphone(FileSensor):
             )
             audio_format = "wav"
 
-        super().__init__(audio_format, *args, **kwargs)
+        super().__init__(*args, file_ext=audio_format, uses_height=True, **kwargs)
 
         self.card = card
         self.device = device
@@ -33,14 +33,16 @@ class Microphone(FileSensor):
         try:
             self._set_volume(level)
         except SensorConfigurationException as e:
-            logger.error("Microphone configuration error (continuing): {}".format(e))
+            logger.error(
+                "Microphone configuration error (continuing): {}".format(e))
 
     def _set_volume(self, level: str):
         cmd = ["amixer", "-c", str(self.card), "sset", "Mic", str(level)]
 
         logger.debug("Setting microphone level: {}".format(" ".join(cmd)))
 
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE)
         p.wait()
         stderr = p.stderr.read()
 

@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class TelekomVolume(LogSensor):
     def __init__(self, *args, endpoint_uri: str = "http://pass.telekom.de/api/service/generic/v1/status", **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=False, ** kwargs)
 
         self.endpoint_uri = endpoint_uri
 
-    @property
-    def _header(self):
-        return ["Used Volume (MiB)", "Remaining Volume (MiB)", "Remaining Time (Days)"]
+    _header_sensor = [
+        "Used Volume (MiB)",
+        "Remaining Volume (MiB)",
+        "Remaining Time (Days)",
+    ]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading Telekom data plan information.")

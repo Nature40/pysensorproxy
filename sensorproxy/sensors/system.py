@@ -11,9 +11,17 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class CPU(LogSensor):
-    @property
-    def _header(self):
-        return ["CPU Usage (%)", "CPU Temperature (°C)", "Load Average (1)", "Load Average (5)", "Load Average (15)", "Uptime (s)"]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, uses_height=False, **kwargs)
+
+    _header_sensor = [
+        "CPU Usage (%)",
+        "CPU Temperature (°C)",
+        "Load Average (1)",
+        "Load Average (5)",
+        "Load Average (15)",
+        "Uptime (s)",
+    ]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading CPU usage using psutil")
@@ -37,9 +45,14 @@ class CPU(LogSensor):
 
 @register_sensor
 class Memory(LogSensor):
-    @property
-    def _header(self):
-        return ["Memory Available (MiB)", "Memory Used (MiB)", "Memory Free (MiB)"]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, uses_height=False, **kwargs)
+
+    _header_sensor = [
+        "Memory Available (MiB)",
+        "Memory Used (MiB)",
+        "Memory Free (MiB)",
+    ]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading Memory usage using psutil")

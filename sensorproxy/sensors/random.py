@@ -11,13 +11,13 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class Random(LogSensor):
     def __init__(self, *args, maximum=100, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=False, **kwargs)
 
         self.maximum = maximum
 
-    @property
-    def _header(self):
-        return ["int"]
+    _header_sensor = [
+        "Random Integer",
+    ]
 
     def _read(self, *args, **kwargs):
         return [random.randint(0, self.maximum)]
@@ -26,7 +26,7 @@ class Random(LogSensor):
 @register_sensor
 class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
-        super().__init__("bin", *args, **kwargs)
+        super().__init__(*args, file_ext="bin", uses_height=False, **kwargs)
 
     def _read(self, file_path, bytes, *args, **kwargs):
         with open(file_path, "ab") as file:

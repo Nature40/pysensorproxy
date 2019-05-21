@@ -12,13 +12,14 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class AM2302(LogSensor):
     def __init__(self, *args, pin: int, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=True, **kwargs)
 
         self.pin = pin
 
-    @property
-    def _header(self):
-        return ["Temperature (°C)", "Humidity (%)"]
+    _header_sensor = [
+        "Temperature (°C)",
+        "Humidity (%)",
+    ]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
@@ -42,11 +43,13 @@ class AM2302(LogSensor):
 @register_sensor
 class TSL2561(LogSensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=True, **kwargs)
 
-    @property
-    def _header(self):
-        return ["Illuminance (lux)", "broadband", "ir"]
+    _header_sensor = [
+        "Illuminance (lux)",
+        "broadband",
+        "ir",
+    ]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading TSL2561 sensor via i2c")
