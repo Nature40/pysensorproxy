@@ -65,11 +65,6 @@ class Sensor:
         return self._header_start + self._header_sensor
 
     @abstractmethod
-    @property
-    def _file_ext(self):
-        pass
-
-    @abstractmethod
     def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", **kwargs):
         """Read the sensor and write the value. """
         pass
