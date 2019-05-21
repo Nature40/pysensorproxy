@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 class CPU(LogSensor):
     @property
     def _header(self):
-        return ["CPU Usage (%)", "CPU Temperature (°C)", "Load Average (1)", "Load Average (3)", "Load Average (5)", "Uptime (s)"]
+        return ["CPU Usage (%)", "CPU Temperature (°C)", "Load Average (1)", "Load Average (5)", "Load Average (15)", "Uptime (s)"]
 
     def _read(self, *args, **kwargs):
         logger.debug("Reading CPU usage using psutil")
