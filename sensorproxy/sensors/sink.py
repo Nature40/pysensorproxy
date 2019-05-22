@@ -69,6 +69,10 @@ class Sink(Sensor):
                 pass
 
             for file_name in os.listdir(host_dir_input):
+                # skip files with leading . (probably currently rsynced)
+                if file_name.startswith("."):
+                    continue
+
                 file_path_incoming = os.path.join(host_dir_input, file_name)
 
                 # parse filename according to convention
@@ -87,7 +91,7 @@ class Sink(Sensor):
             try:
                 os.rmdir(host_dir_input)
             except OSError as e:
-                logger.warn(
+                logger.info(
                     "couldn't remove folder of {}: {}".format(_hostname, e))
 
     def refresh(self):
