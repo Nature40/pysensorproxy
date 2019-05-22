@@ -67,12 +67,14 @@ class SensorProxy:
     def _init_identifiers(self, *args, id: str = None, **kwargs):
         self.hostname = platform.node()
         if not id:
-            raise ConfigurationException("Configuration file is missing an ID for this instance.")
-        
+            raise ConfigurationException(
+                "Configuration file is missing an ID for this instance.")
+
         blacklist = "/-."
         if any((c in set(blacklist)) for c in id):
-            raise ConfigurationException("The ID may not contain those characters: '{}'".format(blacklist))
-        
+            raise ConfigurationException(
+                "The ID may not contain those characters: '{}'".format(blacklist))
+
         self.id = id
         logger.info("Running for id '{}' on host '{}'.".format(
             self.id, self.hostname))
@@ -261,6 +263,8 @@ class SensorProxy:
             if test:
                 params = params.copy()
                 params["duration"] = "1s"
+                params["count"] = 1
+                params["delay"] = "0s"
 
             sensor.record(height_m=height_m, **params)
         except KeyError:

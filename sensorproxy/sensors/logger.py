@@ -33,4 +33,4 @@ class LoggingHandler(logging.Handler, LogSensor):
     def emit(self, record):
         ts = self.time_repr()
         reading = [record.name, record.levelname, record.msg]
-        self._publish(ts, reading)
+        self._publish(ts, reading, influx_publish=True)
