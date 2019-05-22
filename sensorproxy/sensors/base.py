@@ -34,11 +34,11 @@ class Sensor:
         super().__init__()
 
     def _generate_filename(self, custom: [str]):
-        _filename_format = "{_id}-{_class}-{_name}-{_custom}.{_file_ext}"
+        _filename_format = "{_id}-{_class}-{_sensor}-{_custom}.{_file_ext}"
 
         _id = self.proxy.id
         _class = self.__class__.__name__
-        _name = self.name
+        _sensor = self.name
         _file_ext = self.file_ext
         _custom = "-".join(custom)
 
@@ -49,7 +49,7 @@ class Sensor:
         basename, _file_ext = filename.split(".")
         metadata = basename.split("-")
 
-        tags = dict(zip(["_id", "_class", "_name"], metadata[:3]))
+        tags = dict(zip(["_id", "_class", "_sensor"], metadata[:3]))
         # TODO: Parse tags in custom headers, e.g. height for images
 
         return tags
