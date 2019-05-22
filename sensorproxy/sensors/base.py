@@ -173,8 +173,13 @@ class FileSensor(Sensor):
     def get_file_path(self):
         custom = [Sensor.time_repr()]
 
-        if self.uses_height and self.proxy.lift:
-            custom.append(self.proxy.lift._current_height_m)
+        # append height if available
+        if self.uses_height:
+            if self.proxy.lift:
+                if self.proxy.lift._current_height_m:
+                    height = "{}m".format(
+                        self.proxy.lift._current_height_m)
+                    custom.append(height)
 
         file_name = self._generate_filename(custom)
 
