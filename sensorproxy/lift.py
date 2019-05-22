@@ -290,7 +290,7 @@ class Lift:
         # location is already reached
         if self._current_height_m == height_request:
             logger.info("Lift is already at {}m.".format(height_request))
-            return
+            return self._current_height_m
 
         # extremes: move all the way up or down
         # _current_height_m doesn't net to be set, as the hall sensor checks set these values
@@ -298,14 +298,15 @@ class Lift:
             logger.info("Requested height is high ({}m >= {}m maximum), moving to the top.".format(
                 height_request, self.height))
             self._move(255, self._time_up_s + self.travel_margin_s)
-            self._current_height_m = height_request
-            return
-        elif height_request <= 0.0:
+            self._current_height_m = self.height
+            return self._current_height_m
+
+        if height_request <= 0.0:
             logger.info("Request height is low ({}m <= 0m), moving to the bottom.".format(
                 height_request))
             self._move(-255, self._time_down_s + self.travel_margin_s)
-            self._current_height_m = height_request
-            return
+            self._current_height_m = 0.0
+            return self._current_height_m
 
         # compute travel distance and duration
         travel_distance_m = height_request - self._current_height_m
@@ -327,6 +328,18 @@ class Lift:
         logger.debug("Reached height {}m after {}s".format(
             height_request, travel_duration_s))
         self._current_height_m = height_request
+
+        # sanity-check reached height
+        if self.hall_bottom:
+            if self._current_height_m != 0.0:
+                logger.warn("Reached bottom hall sensor (0.0), but current height is {}, correcting.".format(
+                    self._current_height_m))
+        if self.hall_top:
+            if self._current_height_m != self.height:
+                logger.warn("Reached top hall sensor ({}), but current height is {}, correcting.".format(
+                    self.height, self._current_height_m))
+
+        return self._current_height_m
 
     def calibrate(self):
         """Calibrate the lift travel times, by moving fully up and back down."""
