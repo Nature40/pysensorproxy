@@ -40,7 +40,7 @@ class Sink(Sensor):
             tags = self._parse_filename(file_name)
 
             self.proxy.influx.publish_csv(
-                csv_file=file_path,
+                csv_path=file_path,
                 _hostname=_hostname,
                 **tags,
             )
