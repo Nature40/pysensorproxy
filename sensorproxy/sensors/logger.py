@@ -15,14 +15,16 @@ class LoggingHandler(logging.Handler, LogSensor):
 
         level_num = logging._nameToLevel[level.upper()]
         logging.Handler.__init__(self, level_num)
-        LogSensor.__init__(self, *args, **kwargs)
+        LogSensor.__init__(self, *args, uses_height=False, **kwargs)
 
         root = logging.getLogger(logger_name)
         root.addHandler(self)
 
-    @property
-    def _header(self):
-        return ["Name", "Level", "Message"]
+    _header_sensor = [
+        "#Name",
+        "#Level",
+        "Message",
+    ]
 
     def record(self, *args, **kwargs):
         raise SensorNotAvailableException(
@@ -31,4 +33,4 @@ class LoggingHandler(logging.Handler, LogSensor):
     def emit(self, record):
         ts = self.time_repr()
         reading = [record.name, record.levelname, record.msg]
-        self._publish(ts, reading)
+        self._publish(ts, reading, influx_publish=True)

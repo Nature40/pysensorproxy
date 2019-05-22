@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class PiCamera(FileSensor):
     def __init__(self, *args, img_format: str, **kwargs):
-        super().__init__(img_format, *args, **kwargs)
+        super().__init__(*args, uses_height=True, file_ext=img_format, ** kwargs)
 
         self.format = img_format
 

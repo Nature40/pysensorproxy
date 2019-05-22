@@ -25,13 +25,15 @@ import sensorproxy.sensors.rsync
 import sensorproxy.sensors.sink
 import sensorproxy.sensors.system
 
-
-from sensorproxy.influx_api import InfluxAPI
 from sensorproxy.lift import Lift
 from sensorproxy.wifi import WiFiManager
-
+from sensorproxy.influx import InfluxDBSensorClient
 
 logger = logging.getLogger(__name__)
+
+
+class ConfigurationException(Exception):
+    pass
 
 
 def run_threaded(job_func, *args):
@@ -64,8 +66,15 @@ class SensorProxy:
 
     def _init_identifiers(self, *args, id: str = None, **kwargs):
         self.hostname = platform.node()
-        if id:
-            logger.warn("Id is missing for this sensorbox.")
+        if not id:
+            raise ConfigurationException(
+                "Configuration file is missing an ID for this instance.")
+
+        blacklist = "/-."
+        if any((c in set(blacklist)) for c in id):
+            raise ConfigurationException(
+                "The ID may not contain those characters: '{}'".format(blacklist))
+
         self.id = id
         logger.info("Running for id '{}' on host '{}'.".format(
             self.id, self.hostname))
@@ -119,7 +128,7 @@ class SensorProxy:
 
         self.influx = None
         if influx:
-            self.influx = InfluxAPI(self, **influx)
+            self.influx = InfluxDBSensorClient(**influx)
             logger.info("using influx at '{}'".format(influx["host"]))
 
     def _init_sensors(self, *args, sensors={}, **kwargs):
@@ -254,6 +263,8 @@ class SensorProxy:
             if test:
                 params = params.copy()
                 params["duration"] = "1s"
+                params["count"] = 1
+                params["delay"] = "0s"
 
             sensor.record(height_m=height_m, **params)
         except KeyError:

@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class RsyncSender(LogSensor):
     def __init__(self, *args, ssid: str, psk: str, destination: str, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, uses_height=False, **kwargs)
 
         self.destination = destination
         self.wifi = WiFi(ssid, psk)
 
-    @property
-    def _header(self):
-        return ["RSync Status"]
+    _header_sensor = [
+        "Status",
+    ]
 
     def _rsync_cmd(self):
         cmd = ["rsync", "-avz", "--remove-source-files", "--no-relative",
