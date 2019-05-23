@@ -213,17 +213,17 @@ class SensorProxy:
 
             try:
                 self.lift.connect()
-                last_height = None
+                height_last = None
 
                 for height_request in metering["heights"]:
-                    reached_height = self.lift.move_to(height)
-                    if last_height == height:
-                        logger.info("Last height ({}m) matches reached height ({}), skipping metering. (requested: {}m, max: {}m)".format(
-                            last_height, reached_height, height_request, self.lift.height))
+                    height_reached = self.lift.move_to(height_request)
+                    if height_last == height_reached:
+                        logger.info("Last height ({}m) matches reached height ({}m), skipping metering. (requested: {}m, max: {}m)".format(
+                            height_last, height_reached, height_request, self.lift.height))
                         continue
 
                     logger.info(
-                        "Running metering {} at {}m.".format(name, reached_height))
+                        "Running metering {} at {}m.".format(name, height_reached))
                     self._record_sensors_threaded(
                         metering["sensors"], test=test)
 
@@ -239,6 +239,10 @@ class SensorProxy:
             except sensorproxy.lift.LiftConnectionException as e:
                 logger.error("Error in lift connection: {}".format(e))
                 self.lift.disconnect()
+                self._record_sensors_threaded(metering["sensors"], test=test)
+
+            except Exception as e:
+                logger.error("Unhandable exception: {}".format(e))
                 self._record_sensors_threaded(metering["sensors"], test=test)
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
