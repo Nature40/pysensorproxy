@@ -147,7 +147,7 @@ class Lift:
         """Value of the bottom hall sensor."""
         _hall_bottom = gpio.input(self.hall_bottom_pin)
         if _hall_bottom:
-            logger.info("Reached bottom hall sensor.")
+            logger.debug("Reached bottom hall sensor.")
         return _hall_bottom
 
     @property
@@ -155,7 +155,7 @@ class Lift:
         """Value of the top hall sensor."""
         _hall_top = gpio.input(self.hall_top_pin)
         if _hall_top:
-            logger.info("Reached top hall sensor.")
+            logger.debug("Reached top hall sensor.")
         return _hall_top
 
     def _check_limits(self, speed: int):
@@ -284,7 +284,7 @@ class Lift:
 
     def move_to(self, height_request: float):
         if self._current_height_m == None:
-            logger.error("Lift is not calibrated yet, starting calibration!")
+            logger.warn("Lift is not calibrated yet, starting calibration!")
             self.calibrate()
 
         # location is already reached
@@ -332,11 +332,11 @@ class Lift:
         # sanity-check reached height
         if self.hall_bottom:
             if self._current_height_m != 0.0:
-                logger.warn("Reached bottom hall sensor (0.0), but current height is {}, correcting.".format(
+                logger.error("Reached bottom hall sensor (0.0), but current height is {}, correcting.".format(
                     self._current_height_m))
         if self.hall_top:
             if self._current_height_m != self.height:
-                logger.warn("Reached top hall sensor ({}), but current height is {}, correcting.".format(
+                logger.error("Reached top hall sensor ({}), but current height is {}, correcting.".format(
                     self.height, self._current_height_m))
 
         return self._current_height_m
@@ -345,15 +345,15 @@ class Lift:
         """Calibrate the lift travel times, by moving fully up and back down."""
 
         logger.info("Starting lift calibration program")
-        logger.info(
+        logger.debug(
             "moving up (1 second steps) and back down to start in defined state.")
         while self.hall_bottom:
             self._move(255, 1)
         self._move(-255)
 
-        logger.info("moving lift to top")
+        logger.debug("moving lift to top")
         self._time_up_s = self._move(255)
-        logger.info("going back to bottom")
+        logger.debug("going back to bottom")
         self._time_down_s = self._move(-255)
 
         logger.info("calibration finished, {}s to the top, {}s back to bottom".format(
