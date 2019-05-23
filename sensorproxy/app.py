@@ -305,14 +305,27 @@ class SensorProxy:
             )
         )
 
-        for day_second in range(start, end, interval):
-            # TODO: remove timezone information here
+        def schedule_day_second(day_second):
             ts = datetime.datetime.fromtimestamp(day_second)
             time = ts.time()
 
             s = schedule.every().day
             s.at_time = time
             s.do(run_threaded, self._run_metering, name, metering)
+
+        if start < end:
+            for day_second in range(start, end, interval):
+                schedule_day_second(day_second)
+        else:
+            logger.info("metering over night (start: {}h, end: {}h".format(
+                metering["schedule"]["start"], metering["schedule"]["end"]))
+            # add one day to end
+            end += 24 * 60 * 60
+
+            for day_second in range(start, end, interval):
+                # align day_second to the actual day
+                day_second %= (60 * 60 * 24)
+                schedule_day_second(day_second)
 
     def run(self):
         for name, metering in self.meterings.items():
