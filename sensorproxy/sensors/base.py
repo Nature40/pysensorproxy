@@ -108,7 +108,7 @@ class LogSensor(Sensor):
         return self.__file_path
 
     def refresh(self):
-        # generate and return full path
+        # generate new path
         file_name = self._generate_filename([Sensor.time_repr()])
         self.__file_path = os.path.join(
             self.proxy.storage_path, self.proxy.hostname, file_name)
@@ -152,17 +152,22 @@ class LogSensor(Sensor):
         if self.proxy.influx and influx_publish:
             logger.info("Publishing {} metering to Influx".format(self.name))
 
-            try:
-                self.proxy.influx.publish(
-                    header=self.header,
-                    row=row,
-                    _class=self.__class__.__name__,
-                    _hostname=self.proxy.hostname,
-                    _id=self.proxy.id,
-                    _sensor=self.name,
-                )
-            except Exception as e:
-                logger.warn("Publishing on infux failed: {}".format(e))
+            def _publish_thread(self, row):
+                try:
+                    self.proxy.influx.publish(
+                        header=self.header,
+                        row=row,
+                        _class=self.__class__.__name__,
+                        _hostname=self.proxy.hostname,
+                        _id=self.proxy.id,
+                        _sensor=self.name,
+                    )
+                except Exception as e:
+                    logger.warn("Publishing on infux failed: {}".format(e))
+
+            thread = threading.Thread(
+                target=_publish_thread, args=(self, row))
+            thread.start()
 
         return file_path
 
