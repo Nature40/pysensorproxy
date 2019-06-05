@@ -317,8 +317,8 @@ class SensorProxy:
             for day_second in range(start, end, interval):
                 schedule_day_second(day_second)
         else:
-            logger.info("metering over night (start: {}h, end: {}h".format(
-                metering["schedule"]["start"], metering["schedule"]["end"]))
+            logger.info("metering {} runs over night (start: {}, end: {})".format(
+                name, metering["schedule"]["start"], metering["schedule"]["end"]))
             # add one day to end
             end += 24 * 60 * 60
 
