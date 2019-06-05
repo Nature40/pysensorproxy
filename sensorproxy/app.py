@@ -101,7 +101,8 @@ class SensorProxy:
             log_level = "INFO"
 
         log_level_num = logging._nameToLevel[log_level.upper()]
-        log_path = os.path.join(storage_path, "sensorproxy.txt")
+        log_path = os.path.join(
+            storage_path, sensorproxy.sensors.base.Sensor.time_repr()+"_sensorproxy.txt")
 
         handler = logging.FileHandler(log_path, mode="w")
         handler.setLevel(log_level_num)
