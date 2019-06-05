@@ -105,6 +105,9 @@ class LogSensor(Sensor):
         pass
 
     def get_file_path(self):
+        if not os.path.exists(self.__file_path):
+            self.refresh()
+
         return self.__file_path
 
     def refresh(self):
@@ -113,7 +116,7 @@ class LogSensor(Sensor):
         self.__file_path = os.path.join(
             self.proxy.storage_path, self.proxy.hostname, file_name)
 
-        with open(self.get_file_path(), "a") as csv_file:
+        with open(self.__file_path, "a") as csv_file:
             writer = csv.writer(csv_file)
             writer.writerow(self.header)
             csv_file.flush()
