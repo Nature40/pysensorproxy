@@ -11,6 +11,8 @@ import socketserver
 import threading
 import time
 import yaml
+import subprocess
+import sys
 
 import schedule
 from pytimeparse import parse as parse_time
@@ -395,4 +397,12 @@ def main():
 
 
 if __name__ == "__main__":
+    p = subprocess.Popen(["pgrep", "sensorproxy"], stdout=subprocess.PIPE)
+    status = p.wait()
+    if status == 0:
+        pids = p.stdout.read().decode().splitlines()
+        logger.error("Sensorproxy already running, pid: {}".format(
+            ", ".join(pids)))
+        sys.exit(1)
+
     main()
