@@ -166,8 +166,11 @@ class Lift:
         """Check if the lift has timed out.
 
         Raises:
-            ResponseTimeoutException: If the lift did not respond in time.
+            LiftConnectionException: If the lift did not respond in time.
         """
+
+        if self._last_response_ts is None:
+            return
 
         delay = time.time() - self._last_response_ts
         if delay > self.timeout_s:
@@ -182,7 +185,6 @@ class Lift:
 
         Raises:
             LiftConnectionException: If not connected to a lift.
-            LiftSocketCommunicationException: If the speed command could not be send.
         """
 
         if not self._sock:
@@ -202,7 +204,6 @@ class Lift:
 
         Raises:
             LiftConnectionException: If not connected to a lift.
-            UnknownReponseException: If the response is unknown.
         """
 
         if not self._sock:
@@ -227,7 +228,7 @@ class Lift:
                 raise LiftConnectionException(
                     "Unknown Response from lift: '{}'".format(cmd))
 
-    def _move(self, speed: int, time_s: float = 300.0):
+    def _move(self, speed: int, moving_time_s: float = 300.0):
         """Move the lift for a period of time with a provided speed until the top or bottom is reached.
 
         Args:
@@ -239,19 +240,19 @@ class Lift:
         """
 
         logger.info(
-            "moving lift with speed {} for max {}s".format(speed, time_s))
+            "moving lift with speed {} for max {}s".format(speed, moving_time_s))
         ride_start_ts = time.time()
 
         while True:
-            if ride_start_ts + time_s < time.time():
+            next_loop_ts = time.time() + self.update_interval_s
+
+            if ride_start_ts + moving_time_s < time.time():
                 if speed == 0:
                     logger.info("Lift stopping finished.")
-                    return time.time() - ride_start_ts
                 else:
-                    logger.info("Lift moved for {}s, stopping.".format(time_s))
-                    ride_stop_ts = time.time()
-                    self._move(0, 1)
-                    return ride_stop_ts - ride_start_ts
+                    logger.info(
+                        "Lift moved for {}s, stopping.".format(moving_time_s))
+                break
 
             try:
                 self._send_speed(speed)
@@ -263,11 +264,19 @@ class Lift:
 
             except _MovingException as e:
                 logger.info("Lift reached end, stopping.")
-                ride_stop_ts = time.time()
-                self._move(0, 1)
-                return ride_stop_ts - ride_start_ts
+                break
 
-            time.sleep(self.update_interval_s)
+            sleep_s = next_loop_ts - time.time()
+            time.sleep(sleep_s)
+
+        ride_stop_ts = time.time()
+
+        # send lift stop command (to be faster than timeout)
+        if speed != 0:
+            self._move(0, 1)
+
+        self._last_response_ts = None
+        return ride_stop_ts - ride_start_ts
 
     def move_to(self, height_request: float):
         if self._current_height_m == None:
