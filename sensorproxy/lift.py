@@ -5,7 +5,7 @@ import threading
 
 import RPi.GPIO as gpio
 
-from sensorproxy.wifi import WiFi, WiFiManager
+from sensorproxy.wifi import WiFi, WiFiManager, WiFiConnectionError
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +95,11 @@ class Lift:
 
         if self.mgr:
             logger.info("connecting to '{}'".format(self.wifi.ssid))
-            self.mgr.connect(self.wifi)
+            try:
+                self.mgr.connect(self.wifi)
+            except WiFiConnectionError as e:
+                self._lock.release()
+                raise e
         else:
             logger.info("wifi is handled externally")
 
@@ -107,6 +111,7 @@ class Lift:
         start_ts = time.time()
         while self._current_speed == None:
             if start_ts + timeout_s < time.time():
+                self.disconnect()
                 raise LiftConnectionException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
             self._recv_responses(0)

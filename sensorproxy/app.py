@@ -151,11 +151,9 @@ class SensorProxy:
         try:
             self.lift.connect()
         except sensorproxy.wifi.WiFiConnectionError as e:
-            self.lift.disconnect()
             logger.error("Couldn't connect to lift wifi: {}".format(e))
             return
         except sensorproxy.lift.LiftConnectionException as e:
-            self.lift.disconnect()
             logger.error("Couldn't connect to lift: {}".format(e))
             return
 
@@ -237,7 +235,6 @@ class SensorProxy:
 
             except Exception as e:
                 logger.error("Metering {} failed: {}".format(name, e))
-                self.lift.disconnect()
                 self._record_sensors_threaded(metering["sensors"], test=test)
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):
