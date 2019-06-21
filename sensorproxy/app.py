@@ -148,11 +148,12 @@ class SensorProxy:
         try:
             self.lift.connect()
         except sensorproxy.wifi.WiFiConnectionError as e:
+            self.lift.disconnect()
             logger.error("Couldn't connect to lift wifi: {}".format(e))
             return
         except sensorproxy.lift.LiftConnectionException as e:
-            logger.error("Couldn't connect to lift: {}".format(e))
             self.lift.disconnect()
+            logger.error("Couldn't connect to lift: {}".format(e))
             return
 
         logger.info("Calibrating Lift")
@@ -208,10 +209,8 @@ class SensorProxy:
         logger.info("Running metering {}".format(name))
 
         if (not "heights" in metering) or (self.lift == None) or test:
-            height = self.lift._current_height_m if self.lift else None
             self._record_sensors_threaded(metering["sensors"], test=test)
         else:
-
             try:
                 self.lift.connect()
                 height_last = None
@@ -233,17 +232,9 @@ class SensorProxy:
                 self.lift.move_to(0.0)
                 self.lift.disconnect()
 
-            except sensorproxy.wifi.WiFiConnectionError as e:
-                logger.error("Couldn't connect to lift wifi: {}".format(e))
-                self._record_sensors_threaded(metering["sensors"], test=test)
-
-            except sensorproxy.lift.LiftConnectionException as e:
-                logger.error("Error in lift connection: {}".format(e))
-                self.lift.disconnect()
-                self._record_sensors_threaded(metering["sensors"], test=test)
-
             except Exception as e:
-                logger.error("Unhandable exception: {}".format(e))
+                logger.error("Metering {} failed: {}".format(name, e))
+                self.lift.disconnect()
                 self._record_sensors_threaded(metering["sensors"], test=test)
 
     def _record_sensors_threaded(self, sensors: {str: dict}, test: bool):

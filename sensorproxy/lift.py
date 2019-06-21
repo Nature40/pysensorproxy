@@ -20,21 +20,6 @@ class LiftConnectionException(Exception):
     pass
 
 
-class _UnknownReponseException(LiftConnectionException):
-    """Exception: unknown response from a lift."""
-    pass
-
-
-class _LiftSocketCommunicationException(LiftConnectionException):
-    """Exception: socket error occured while communicating with the lift."""
-    pass
-
-
-class _ResponseTimeoutException(LiftConnectionException):
-    """Exception: no response from the lift for defined time."""
-    pass
-
-
 class Lift:
     """Class representing a lift and its configuration."""
 
@@ -122,7 +107,7 @@ class Lift:
         start_ts = time.time()
         while self._current_speed == None:
             if start_ts + timeout_s < time.time():
-                raise _LiftSocketCommunicationException(
+                raise LiftConnectionException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
             self._recv_responses(0)
 
@@ -170,11 +155,12 @@ class Lift:
 
         if speed > 0 and self.hall_top:
             self._current_height_m = self.height
-            raise _MovingException("cannot move upwards, reached sensor.")
+            raise _MovingException("lift cannot move upwards, reached sensor.")
 
         if speed < 0 and self.hall_bottom:
             self._current_height_m = 0.0
-            raise _MovingException("cannot move downwards, reached sensor.")
+            raise _MovingException(
+                "lift cannot move downwards, reached sensor.")
 
     def _check_timeout(self):
         """Check if the lift has timed out.
@@ -185,8 +171,8 @@ class Lift:
 
         delay = time.time() - self._last_response_ts
         if delay > self.timeout_s:
-            raise _ResponseTimeoutException(
-                "No response since {} s.".format(delay))
+            raise LiftConnectionException(
+                "No response from lift since {} s.".format(delay))
 
     def _send_speed(self, speed: int):
         """Send a speed command to the connected lift.
@@ -200,7 +186,7 @@ class Lift:
         """
 
         if not self._sock:
-            raise LiftConnectionException("not connected to a lift")
+            raise LiftConnectionException("Not connected to a lift")
 
         self._check_limits(speed)
 
@@ -208,8 +194,8 @@ class Lift:
         try:
             self._sock.sendto(request, (self.ip, self.port))
         except OSError as e:
-            raise _LiftSocketCommunicationException(
-                "Sending speed failed: {}".format(e))
+            raise LiftConnectionException(
+                "Sending speed to lift failed: {}".format(e))
 
     def _recv_responses(self, speed_request):
         """Receive latest responses from the connected lift.
@@ -220,7 +206,7 @@ class Lift:
         """
 
         if not self._sock:
-            raise LiftConnectionException("not connected to a lift")
+            raise LiftConnectionException("Not connected to a lift")
 
         while True:
             try:
@@ -238,7 +224,8 @@ class Lift:
                     logger.info("Received speed ({}) does not match requested ({})".format(
                         speed_response, speed_request))
             else:
-                raise _UnknownReponseException("Response: '{}'".format(cmd))
+                raise LiftConnectionException(
+                    "Unknown Response from lift: '{}'".format(cmd))
 
     def _move(self, speed: int, time_s: float = 300.0):
         """Move the lift for a period of time with a provided speed until the top or bottom is reached.
