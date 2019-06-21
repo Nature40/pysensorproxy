@@ -20,6 +20,7 @@ from pytimeparse import parse as parse_time
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.cellular
+import sensorproxy.sensors.energy
 import sensorproxy.sensors.environment
 import sensorproxy.sensors.logger
 import sensorproxy.sensors.optical
