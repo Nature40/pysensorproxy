@@ -23,7 +23,23 @@ class LiftConnectionException(Exception):
 class Lift:
     """Class representing a lift and its configuration."""
 
-    def __init__(self, mgr: WiFiManager, height: float, ssid: str, psk: str = "supersicher", hall_bottom_pin: int = 5, hall_top_pin: int = 6, ip: str = "192.168.3.254", port: int = 35037, update_interval_s: float = 0.05, timeout_s: float = 0.5, travel_margin_s=1.0):
+    def __init__(
+        self,
+        mgr: WiFiManager,
+        height: float,
+        ssid: str,
+        psk: str = "supersicher",
+        hall_bottom_pin: int = 5,
+        hall_top_pin: int = 6,
+        ip: str = "192.168.3.254",
+        port: int = 35037,
+        update_interval_s: float = 0.05,
+        timeout_s: float = 0.5,
+        travel_margin_s=1.0,
+        charging_incicator_pin: int = 13,
+        charging_docking_retries: int = 3,
+        charging_docking_delay_s: float = 3.0,
+    ):
         """
         Args:
             mgr (WiFiManager): WiFi manager to be used to connect
@@ -60,6 +76,9 @@ class Lift:
         self.update_interval_s = update_interval_s
         self.timeout_s = timeout_s
         self.travel_margin_s = travel_margin_s
+        self.charging_incicator_pin = charging_incicator_pin
+        self.charging_docking_retries = charging_docking_retries
+        self.charging_docking_delay_s = charging_docking_delay_s
 
         # calibration variables
         self._time_up_s = None
@@ -76,6 +95,7 @@ class Lift:
         gpio.setmode(gpio.BCM)
         gpio.setup(hall_bottom_pin, gpio.IN)
         gpio.setup(hall_top_pin, gpio.IN)
+        gpio.setup(charging_incicator_pin, gpio.IN)
 
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
@@ -147,6 +167,12 @@ class Lift:
         if _hall_top:
             logger.debug("Reached top hall sensor.")
         return _hall_top
+
+    @property
+    def charging_incicator(self):
+        """Value of the charging incicator pin."""
+        _charging_incicator = gpio.input(self.charging_incicator_pin)
+        return _charging_incicator
 
     def _check_limits(self, speed: int):
         """Check if the lift can move in the requested direction.
@@ -294,7 +320,6 @@ class Lift:
             return self._current_height_m
 
         # extremes: move all the way up or down
-        # _current_height_m doesn't net to be set, as the hall sensor checks set these values
         if height_request >= self.height:
             logger.info("Requested height is high ({}m >= {}m maximum), moving to the top.".format(
                 height_request, self.height))
@@ -306,6 +331,8 @@ class Lift:
             logger.info("Request height is low ({}m <= 0m), moving to the bottom.".format(
                 height_request))
             self._move(-255, self._time_down_s + self.travel_margin_s)
+            self.dock()
+
             self._current_height_m = 0.0
             return self._current_height_m
 
@@ -342,6 +369,22 @@ class Lift:
 
         return self._current_height_m
 
+    def dock(self):
+        if self.charging_incicator_pin == None:
+            return
+
+        for retry in range(self.charging_docking_retries):
+            time.sleep(self.charging_docking_delay_s)
+
+            if self.charging_incicator:
+                logger.info("Charging started.")
+                return
+
+            logger.info(
+                "Charging did not start, retry docking ({}/{}).".format(retry+1, self.charging_docking_retries))
+            self._move(255, 0.5)
+            self._move(-255, 1)
+
     def calibrate(self):
         """Calibrate the lift travel times, by moving fully up and back down."""
 
@@ -364,6 +407,8 @@ class Lift:
         travel_speed_down = self.height / self._time_down_s
         logger.info(
             "lift speeds: {} m/s up, {} m/s down".format(travel_speed_up, travel_speed_down))
+
+        self.dock()
 
 
 if __name__ == "__main__":
