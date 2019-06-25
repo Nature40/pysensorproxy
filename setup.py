@@ -17,7 +17,8 @@ here = path.abspath(path.dirname(__file__))
 with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
-dependencies = ["influxdb", "pytimeparse",
+dependencies = ["influxdb", "pytimeparse", "Adafruit_DHT",
+                "tsl2561", "Adafruit_GPIO", "picamera",
                 "pyyaml", "schedule", "psutil", "gpiozero"]
 
 setup(
