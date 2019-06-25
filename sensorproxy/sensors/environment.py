@@ -43,7 +43,7 @@ class AM2302(LogSensor):
 
 @register_sensor
 class DS18B20(LogSensor):
-    def __init__(self, *args, pin: int, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, uses_height=True, **kwargs)
 
     _header_sensor = [

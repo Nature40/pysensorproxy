@@ -18,7 +18,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
     long_description = f.read()
 
 dependencies = ["influxdb", "pytimeparse", "Adafruit_DHT",
-                "tsl2561", "Adafruit_GPIO", "picamera",
+                "tsl2561", "Adafruit_GPIO", "picamera", "RPi.GPIO"
                 "pyyaml", "schedule", "psutil", "gpiozero", "w1thermsensor"]
 
 setup(
