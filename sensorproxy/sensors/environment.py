@@ -3,6 +3,7 @@ import logging
 
 import Adafruit_DHT
 import tsl2561
+import w1thermsensor
 
 from .base import register_sensor, LogSensor, SensorNotAvailableException
 
@@ -38,6 +39,30 @@ class AM2302(LogSensor):
         logger.info("Read {}°C, {}% humidity".format(temp, humid))
 
         return [temp, humid]
+
+
+@register_sensor
+class DS18B20(LogSensor):
+    def __init__(self, *args, pin: int, **kwargs):
+        super().__init__(*args, uses_height=True, **kwargs)
+
+    _header_sensor = [
+        "Temperature (°C)",
+    ]
+
+    def _read(self, *args, **kwargs):
+        logger.debug("Reading DS18B20 sensor")
+
+        try:
+            sensor = w1thermsensor.W1ThermSensor()
+            temp = sensor.get_temperature()
+        except RuntimeError as e:
+            raise SensorNotAvailableException(e)
+
+        temp = round(temp, 3)
+        logger.info("Read {}°C".format(temp))
+
+        return [temp]
 
 
 @register_sensor

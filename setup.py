@@ -19,7 +19,7 @@ with open(path.join(here, "README.md"), encoding="utf-8") as f:
 
 dependencies = ["influxdb", "pytimeparse", "Adafruit_DHT",
                 "tsl2561", "Adafruit_GPIO", "picamera",
-                "pyyaml", "schedule", "psutil", "gpiozero"]
+                "pyyaml", "schedule", "psutil", "gpiozero", "w1thermsensor"]
 
 setup(
     name="sensorproxy",
