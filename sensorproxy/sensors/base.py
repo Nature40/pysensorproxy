@@ -171,7 +171,7 @@ class LogSensor(Sensor):
                         _sensor=self.name,
                     )
                 except Exception as e:
-                    logger.warn("Publishing on infux failed: {}".format(e))
+                    logger.warn("Publishing on infux failed: {}".format(e), {"influx_publish": False})
 
             thread = threading.Thread(
                 target=_publish_thread, args=(self, row))
