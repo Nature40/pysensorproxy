@@ -21,7 +21,7 @@ class ChargingIndicator(LogSensor):
 
     def _read(self, *args, **kwargs):
         charging = gpio.input(self.charging_incicator_pin)
-        logger.debug("Reading Charging Indicator pin {}: {}".format(
+        logger.info("Read Charging Indicator pin {}: {}".format(
             self.charging_incicator_pin, charging))
 
         return [charging]

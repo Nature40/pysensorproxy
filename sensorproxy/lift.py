@@ -298,7 +298,8 @@ class Lift:
                 break
 
             sleep_s = next_loop_ts - time.time()
-            time.sleep(sleep_s)
+            if sleep_s > 0.0:
+                time.sleep(sleep_s)
 
         ride_stop_ts = time.time()
 
