@@ -36,7 +36,7 @@ class Lift:
         update_interval_s: float = 0.05,
         timeout_s: float = 0.5,
         travel_margin_s=1.0,
-        charging_incicator_pin: int = 13,
+        charging_indicator=None,
         charging_docking_retries: int = 3,
         charging_docking_delay_s: float = 3.0,
     ):
@@ -76,7 +76,7 @@ class Lift:
         self.update_interval_s = update_interval_s
         self.timeout_s = timeout_s
         self.travel_margin_s = travel_margin_s
-        self.charging_incicator_pin = charging_incicator_pin
+        self.charging_indicator = charging_indicator
         self.charging_docking_retries = charging_docking_retries
         self.charging_docking_delay_s = charging_docking_delay_s
 
@@ -95,7 +95,6 @@ class Lift:
         gpio.setmode(gpio.BCM)
         gpio.setup(hall_bottom_pin, gpio.IN)
         gpio.setup(hall_top_pin, gpio.IN)
-        gpio.setup(charging_incicator_pin, gpio.IN)
 
     def __repr__(self):
         return "Lift {}".format(self.wifi.ssid)
@@ -167,12 +166,6 @@ class Lift:
         if _hall_top:
             logger.debug("Reached top hall sensor.")
         return _hall_top
-
-    @property
-    def charging_incicator(self):
-        """Value of the charging incicator pin."""
-        _charging_incicator = gpio.input(self.charging_incicator_pin)
-        return _charging_incicator
 
     def _check_limits(self, speed: int):
         """Check if the lift can move in the requested direction.
@@ -371,13 +364,14 @@ class Lift:
         return self._current_height_m
 
     def dock(self):
-        if self.charging_incicator_pin == None:
+        if self.charging_indicator == None:
             return
 
         for retry in range(self.charging_docking_retries):
             time.sleep(self.charging_docking_delay_s)
 
-            if self.charging_incicator:
+            is_charging = self.charging_indicator.record()[0][0]
+            if is_charging:
                 logger.info("Charging started.")
                 return
 

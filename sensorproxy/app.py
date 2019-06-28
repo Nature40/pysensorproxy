@@ -55,6 +55,7 @@ class SensorProxy:
         self._init_identifiers(**config)
         self._init_storage(**config)
         self._init_local_log(**config)
+        # the optionals has to be init first, as sensors depend on the existence of a lift
         self._init_optionals(**config)
         self._init_sensors(**config)
 
@@ -143,6 +144,10 @@ class SensorProxy:
             self.sensors[name] = sensor
 
             logger.info("added sensor '{}' ({})".format(name, params["type"]))
+
+            if isinstance(sensor, sensorproxy.sensors.energy.ChargingIndicator):
+                if self.lift:
+                    self.lift.charging_indicator = sensor
 
     def _reset_lift(self):
         if not self.lift:

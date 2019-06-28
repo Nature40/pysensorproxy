@@ -124,6 +124,8 @@ class LogSensor(Sensor):
     def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
         logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
+        records = []
+
         try:
             for num in range(count):
                 ts = Sensor.time_repr()
@@ -135,9 +137,12 @@ class LogSensor(Sensor):
 
                 if num == count - 1:
                     time.sleep(parse_time(delay))
+            records.append(reading)
         finally:
             logger.debug("release access to {}".format(self.name))
             self._lock.release()
+
+        return records
 
     def _publish(self, ts, reading, *args, influx_publish: bool = False, height_m: float = None, **kwargs):
         file_path = self.get_file_path()
