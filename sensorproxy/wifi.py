@@ -113,10 +113,8 @@ class WiFiManager:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
             run(["ifup", self.interface])
-            run(["systemctl", "start", "hostapd"])
 
     def _stop_ap(self):
-        run(["systemctl", "stop", "hostapd"])
         run(["ifdown", self.interface])
 
     def connect(self, wifi, timeout=30):
@@ -182,7 +180,7 @@ if __name__ == "__main__":
     handler = logging.StreamHandler()
     logger.addHandler(handler)
 
-    wifi = WiFi("nature40.liftsystem.34a4", "supersicher")
+    wifi = WiFi("nature40-liftsystem-88cc", "supersicher")
 
     mgr = WiFiManager()
     mgr.connect(wifi)

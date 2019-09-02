@@ -418,7 +418,7 @@ if __name__ == "__main__":
     mgr = None
     mgr = WiFiManager(interface="wlan0")
 
-    lift = Lift(mgr=mgr, height=30, ssid="nature40.liftsystem.34a4")
+    lift = Lift(mgr=mgr, height=30, ssid="nature40-liftsystem-88cc")
 
     try:
         lift.connect()
