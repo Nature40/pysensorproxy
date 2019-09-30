@@ -63,6 +63,9 @@ class Lift:
             >>> l.calibrate()
         """
 
+        if height <= 0.0:
+            raise ValueError("Not a valid lift height ({} m)".format(height))
+
         # mandatory parameters
         self.mgr = mgr
         self.height = height

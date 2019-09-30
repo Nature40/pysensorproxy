@@ -128,8 +128,12 @@ class SensorProxy:
 
         self.lift = None
         if lift:
-            self.lift = Lift(self.wifi_mgr, **lift)
-            logger.info("using lift '{}'".format(self.lift.wifi.ssid))
+            try:
+                self.lift = Lift(self.wifi_mgr, **lift)
+                logger.info("using lift '{}'".format(self.lift.wifi.ssid))
+            except Exception as e:
+                logger.warn(
+                    "lift initialization failed (lift not used): {}".format(e))
 
         self.influx = None
         if influx:
