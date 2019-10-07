@@ -113,13 +113,13 @@ class WiFiManager:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
             try:
-                run(["ifup", self.interface], timeout=30)
+                run(["ifup", "-v", self.interface], timeout=30)
             except Exception as e:
                 logger.warn(
                     "WiFi could not be restored (ignoring): {}".format(e))
 
     def _stop_ap(self):
-        run(["ifdown", self.interface])
+        run(["ifdown", "-v", self.interface])
 
     def connect(self, wifi, timeout=30):
         """Connect to WiFi.
