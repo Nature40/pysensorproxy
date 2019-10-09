@@ -52,6 +52,17 @@ class SensorProxy:
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
+        system_time = time.time()
+        config_mod_time = os.path.getmtime(config_path)
+
+        if system_time < config_mod_time:
+            logger.critical(
+                "Current system time {} is before creation of the config file {}.".format(
+                    system_time, config_mod_time))
+            logger.critical(
+                "Time travel is not yet available, so the system time seems to be wrong.")
+            sys.exit("Wrong system time, aborting execution.")
+
         self._init_identifiers(**config)
         self._init_storage(**config)
         self._init_local_log(**config)
