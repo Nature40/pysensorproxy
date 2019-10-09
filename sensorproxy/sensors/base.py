@@ -67,7 +67,7 @@ class Sensor:
         return self._header_start + self._header_sensor
 
     @abstractmethod
-    def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", **kwargs):
+    def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", tries=2, **kwargs):
         """Read the sensor and write the value. """
         pass
 
@@ -121,24 +121,42 @@ class LogSensor(Sensor):
             writer.writerow(self.header)
             csv_file.flush()
 
-    def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
+    def record(self, *args, count: int = 1, delay: str = "0s", tries=2, **kwargs):
         logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
         records = []
+        successful = 0
 
         try:
-            for num in range(count):
-                ts = Sensor.time_repr()
-                reading = self._read(*args, **kwargs)
-                if len(reading) != len(self._header_sensor):
-                    raise SensorNotAvailableException("Reading length ({}) does not match header length ({}).".format(
-                        len(reading), len(self._header_sensor)))
-                self._publish(ts, reading, *args, **kwargs)
+            for num in range(count * tries):
+                try:
+                    ts = Sensor.time_repr()
+                    reading = self._read(*args, **kwargs)
+                    if len(reading) != len(self._header_sensor):
+                        raise SensorNotAvailableException("Reading length ({}) does not match header length ({}).".format(
+                            len(reading), len(self._header_sensor)))
+                    self._publish(ts, reading, *args, **kwargs)
 
-                if num == count - 1:
-                    time.sleep(parse_time(delay))
-            records.append(reading)
+                    records.append(reading)
+                    successful += 1
+                    logger.debug(
+                        "Sensor '{}' measured correctly (try {}/{}, {} successful).".format(
+                            self.name, num+1, count*tries, successful))
+
+                    if successful < count:
+                        time.sleep(parse_time(delay))
+                    else:
+                        break
+
+                except SensorNotAvailableException as e:
+                    logger.warn(
+                        "Sensor '{}' measurement failed (try {}/{}, {} successful): {}".format(self.name, num+1, count*tries, successful, e))
+
         finally:
+            if successful < count:
+                logger.error(
+                    "Sensor '{}': {} successful of {} requested measurements.".format(self.name, successful, count))
+
             logger.debug("release access to {}".format(self.name))
             self._lock.release()
 
@@ -171,7 +189,8 @@ class LogSensor(Sensor):
                         _sensor=self.name,
                     )
                 except Exception as e:
-                    logger.warn("Publishing on infux failed: {}".format(e), {"influx_publish": False})
+                    logger.warn("Publishing on infux failed: {}".format(
+                        e), {"influx_publish": False})
 
             thread = threading.Thread(
                 target=_publish_thread, args=(self, row))
@@ -209,20 +228,35 @@ class FileSensor(Sensor):
 
         pass
 
-    def record(self, *args, count: int = 1, delay: str = "0s", **kwargs):
+    def record(self, *args, count: int = 1, delay: str = "0s", tries=2, **kwargs):
         logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
+        successful = 0
 
         try:
-            for num in range(count):
-                file_path = self.get_file_path()
-                logger.debug(
-                    "running {} reading {}/{}, {} delay.".format(self.name, num, count, delay))
-                self._read(file_path, *args, **kwargs)
-                if num == count - 1:
-                    time.sleep(parse_time(delay))
+            for num in range(count * tries):
+                try:
+                    file_path = self.get_file_path()
+                    self._read(file_path, *args, **kwargs)
+                    successful += 1
+                    logger.debug(
+                        "Sensor '{}' measured correctly (try {}/{}, {} successful).".format(
+                            self.name, num+1, count*tries, successful))
+
+                    if successful < count:
+                        time.sleep(parse_time(delay))
+                    else:
+                        break
+
+                except SensorNotAvailableException as e:
+                    logger.warn(
+                        "Sensor '{}' measurement failed (try {}/{}, {} successful): {}".format(self.name, num+1, count*tries, successful, e))
 
         finally:
+            if successful < count:
+                logger.error(
+                    "Sensor '{}': {} successful of {} requested measurements.".format(self.name, successful, count))
+
             logger.debug("release access to {}".format(self.name))
             self._lock.release()
 
