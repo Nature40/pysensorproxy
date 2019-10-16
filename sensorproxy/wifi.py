@@ -113,6 +113,7 @@ class WiFiManager:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
             try:
+                self._scan_wifi()
                 run(["ifup", "-v", self.interface], timeout=30)
             except Exception as e:
                 logger.warn(
@@ -137,6 +138,9 @@ class WiFiManager:
             self.disconnect()
 
         self._stop_ap()
+
+        # scan the wifi for better logging
+        self._scan_wifi()
 
         config_path = wifi._generate_config()
         wpa_cmd = ["wpa_supplicant", "-c", config_path, "-i", self.interface]
@@ -178,6 +182,14 @@ class WiFiManager:
         logger.debug("release wifi access")
         self._lock.release()
 
+    def _scan_wifi(self, timeout=30):
+        logger.debug("connecting wifi")
+        try:
+            scan = run(["iwlist", self.interface, "scan"], timeout=timeout)
+            logger.debug(scan)
+        except Exception as e:
+            logger.warn("scanning the wifi could not be completed")
+            logger.error(e)
 
 if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)
