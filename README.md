@@ -4,6 +4,8 @@
 
 ## Static configuration: *sensorproxy.yml*
 
+All configuration to describe the configured hardware is to be found in the `sensorproxy.yml` file.
+
 An example static configuration file can be found in [examples/sensorproxy.yml](examples/sensorproxy.yml), or here:
 
 ```yaml
@@ -34,7 +36,7 @@ lift:                             # lift configuration
 
 ## Metering configuration: *meterings.yml*
 
-A meterings configuration file can be found in [examples/meterings.yml](examples/meterings.yml) and here:
+The meterings are configured through a second file, an example file can be found in [examples/meterings.yml](examples/meterings.yml) and here:
 
 In the following example both measuring cyles are independent from each other and as long as no shared ressources are used may run parallel. Conflicting access is prevented by using locks, whenever a sensor is accessed.
 
