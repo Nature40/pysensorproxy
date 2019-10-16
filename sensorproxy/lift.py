@@ -170,6 +170,9 @@ class Lift:
             logger.debug("Reached top hall sensor.")
         return _hall_top
 
+    def _log_hall_sensor_status(self):
+        logger.debug("Status hall sensors - top: {} bottom: {} ".format(self.hall_top, self.hall_bottom))
+
     def _check_limits(self, speed: int):
         """Check if the lift can move in the requested direction.
 
@@ -179,6 +182,7 @@ class Lift:
         Raises:
             MovingException: If the lift cannot move in the requested direction.
         """
+        self._log_hall_sensor_status()
 
         if speed > 0 and self.hall_top:
             self._current_height_m = self.height
@@ -272,6 +276,14 @@ class Lift:
 
         while True:
             next_loop_ts = time.time() + self.update_interval_s
+            current_height = self._current_height_m
+            if speed < 0:
+                travel_speed_mps = - (self.height / self._time_down_s)
+            else:
+                travel_speed_mps = self.height / self._time_up_s
+
+            current_height += ( time.time() - ride_start_ts ) * travel_speed_mps
+            logger.debug("Current height: {}".format(current_height))
 
             if ride_start_ts + moving_time_s < time.time():
                 if speed == 0:
