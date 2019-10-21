@@ -35,58 +35,30 @@ class WiFi:
         logger.debug("generating wpa config at {}".format(config_path))
 
         p = subprocess.Popen(["wpa_passphrase", self.ssid, self.psk],
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             stdout=subprocess.PIPE)
         p.wait()
 
-        stderr = p.stderr.read()
         stdout = p.stdout.read()
         if p.returncode != 0:
             raise Exception(
-                "wpa_passphrase returned {} ({})".format(p.returncode, stderr.decode()))
+                "wpa_passphrase returned {} ({})".format(p.returncode, stdout.decode()))
 
-        with open(config_path, "wb") as config_file:
-            config_file.write(stdout)
+        with open(config_path, "w") as config_file:
+            config = stdout.decode().splitlines()
+            config.insert(0, "ap_scan=1")
+
+            config.insert(-1, "	ampdu_factor=0")
+            config.insert(-1, "	ampdu_density=0")
+            config.insert(-1, "	disable_max_amsdu=1")
+            config.insert(-1, "	disable_ht=1")
+            config.insert(-1, "	disable_ht40=1")
+            config.insert(-1, "	bgscan=\"\"")
+
+            config_file.write("\n".join(config))
+            config_file.write("\n")
             config_file.flush()
 
         return config_path
-
-
-class ReturncodeException(Exception):
-    """Exception for invalid returncodes."""
-
-
-def run(args, timeout=15, valid_returncodes=[0]):
-    """Run a command
-
-    Args:
-        args ([str]): command and arguments to run
-        timeout (int): maximum timeout for the command
-        valid_returncodes ([int]): returncodes not raising an exception
-
-    Raises:
-        ReturncodeException: if return code is not in
-
-    Returns:
-        str: stdout of the command
-    """
-
-    logger.debug("running {}".format(" ".join(args)))
-    p = subprocess.Popen(args)
-
-    try:
-        outs, errs = p.communicate(timeout=timeout)
-
-        if p.returncode not in valid_returncodes:
-            raise ReturncodeException("Returncode {} is not in list of valid ({}), stderr: {}".format(
-                p.returncode, valid_returncodes, errs))
-
-    except subprocess.TimeoutExpired as e:
-        p.kill()
-        outs, errs = p.communicate()
-        logger.error("Process timed out, stderr: {}".format(errs))
-        raise e
-
-    return outs
 
 
 class WiFiConnectionError(Exception):
@@ -112,15 +84,16 @@ class WiFiManager:
         if self.wpa_supplicant is not None:
             logger.info("don't starting ap; a wpa_supplicant is running")
         else:
-            try:
-                self._scan_wifi()
-                run(["ifup", "-v", self.interface], timeout=30)
-            except Exception as e:
-                logger.warn(
-                    "WiFi could not be restored (ignoring): {}".format(e))
+            p = subprocess.Popen(["ifup", "-v", self.interface])
+            p.wait(30)
+            if p.returncode not in [0]:
+                logger.warn("WiFi could not be restored, ignoring")
 
     def _stop_ap(self):
-        run(["ifdown", "-v", self.interface])
+        p = subprocess.Popen(["ifdown", "-v", self.interface])
+        p.wait(30)
+        if p.returncode not in [0]:
+            logger.warn("WiFi could not be stopped, ignoring")
 
     def connect(self, wifi, timeout=30):
         """Connect to WiFi.
@@ -139,19 +112,16 @@ class WiFiManager:
 
         self._stop_ap()
 
-        # scan the wifi for better logging
-        self._scan_wifi()
-
         config_path = wifi._generate_config()
-        wpa_cmd = ["wpa_supplicant", "-c", config_path, "-i", self.interface]
+        wpa_cmd = ["wpa_supplicant", "-d", "-c",
+                   config_path, "-i", self.interface]
 
         logger.debug("running {}".format(" ".join(wpa_cmd)))
         self.wpa_supplicant = subprocess.Popen(wpa_cmd)
 
-        try:
-            run(["dhclient", self.interface], timeout=timeout)
-            logger.info("wifi connection established")
-        except Exception as e:
+        p = subprocess.Popen(["dhclient", "-v", self.interface])
+        p.wait(timeout)
+        if p.returncode not in [0]:
             self.wpa_supplicant.kill()
             self.wpa_supplicant = None
 
@@ -160,21 +130,27 @@ class WiFiManager:
             logger.debug("release wifi access")
             self._lock.release()
 
-            logger.error("wifi connection failed: {}".format(e))
-            raise WiFiConnectionError(e)
+            logger.error("wifi connection failed.")
+            raise WiFiConnectionError("dhclient failed")
 
     def disconnect(self):
         """Disconnect from current WiFi"""
 
         logger.info("disconnecting wifi")
-        run(["dhclient", "-r", self.interface])
+        p = subprocess.Popen(["dhclient", "-v", "-r", self.interface])
+        p.wait(30)
+        if p.returncode not in [0]:
+            logger.warning("dhclient failed to relase, ignoring.")
 
         logger.debug("killing wpa_supplicant")
         self.wpa_supplicant.send_signal(signal.SIGINT)
         self.wpa_supplicant.wait()
         self.wpa_supplicant = None
 
-        run(["ifconfig", self.interface, "down"])
+        p = subprocess.Popen(["ifconfig", "-v", self.interface, "down"])
+        p.wait(30)
+        if p.returncode not in [0]:
+            logger.warning("ifconfig failed to stop interface, ignoring.")
 
         logger.info("wifi disconnected")
 
@@ -183,13 +159,11 @@ class WiFiManager:
         self._lock.release()
 
     def _scan_wifi(self, timeout=30):
-        logger.debug("connecting wifi")
-        try:
-            scan = run(["iwlist", self.interface, "scan"], timeout=timeout)
-            logger.debug(scan)
-        except Exception as e:
-            logger.warn("scanning the wifi could not be completed")
-            logger.error(e)
+        p = subprocess.Popen(["iwlist", self.interface, "scan"])
+        p.wait(30)
+        if p.returncode not in [0]:
+            logger.warning("iwlist scan failed, ignoring.")
+
 
 if __name__ == "__main__":
     logger.setLevel(logging.DEBUG)

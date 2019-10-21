@@ -128,15 +128,15 @@ class Lift:
         self._sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._sock.setblocking(False)
 
-        self._send_speed(0)
-
         start_ts = time.time()
         while self._current_speed == None:
+            self._send_speed(0)
             if start_ts + timeout_s < time.time():
                 self.disconnect()
                 raise LiftConnectionException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
             self._recv_responses(0)
+            time.sleep(self.update_interval_s)
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))
 
@@ -158,20 +158,13 @@ class Lift:
     def hall_bottom(self):
         """Value of the bottom hall sensor."""
         _hall_bottom = gpio.input(self.hall_bottom_pin)
-        if _hall_bottom:
-            logger.debug("Reached bottom hall sensor.")
         return _hall_bottom
 
     @property
     def hall_top(self):
         """Value of the top hall sensor."""
         _hall_top = gpio.input(self.hall_top_pin)
-        if _hall_top:
-            logger.debug("Reached top hall sensor.")
         return _hall_top
-
-    def _log_hall_sensor_status(self):
-        logger.debug("Status hall sensors - top: {} bottom: {} ".format(self.hall_top, self.hall_bottom))
 
     def _check_limits(self, speed: int):
         """Check if the lift can move in the requested direction.
@@ -182,7 +175,8 @@ class Lift:
         Raises:
             MovingException: If the lift cannot move in the requested direction.
         """
-        self._log_hall_sensor_status()
+        logger.debug(
+            "Hall sensors top: {}, bottom: {}".format(self.hall_top, self.hall_bottom))
 
         if speed > 0 and self.hall_top:
             self._current_height_m = self.height
@@ -276,14 +270,6 @@ class Lift:
 
         while True:
             next_loop_ts = time.time() + self.update_interval_s
-            current_height = self._current_height_m
-            if speed < 0:
-                travel_speed_mps = - (self.height / self._time_down_s)
-            else:
-                travel_speed_mps = self.height / self._time_up_s
-
-            current_height += ( time.time() - ride_start_ts ) * travel_speed_mps
-            logger.debug("Current height: {}".format(current_height))
 
             if ride_start_ts + moving_time_s < time.time():
                 if speed == 0:
@@ -302,7 +288,7 @@ class Lift:
                 logger.warn("Lift command exception: {}".format(e))
 
             except _MovingException as e:
-                logger.info("Lift reached end, stopping.")
+                logger.info("{}, stopping.".format(e))
                 break
 
             sleep_s = next_loop_ts - time.time()
