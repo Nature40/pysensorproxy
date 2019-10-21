@@ -65,7 +65,7 @@ class SensorProxy:
 
         self._init_identifiers(**config)
         self._init_storage(**config)
-        self._init_local_log(**config)
+        # self._init_local_log(**config)
         # the optionals has to be init first, as sensors depend on the existence of a lift
         self._init_optionals(**config)
         self._init_sensors(**config)

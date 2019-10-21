@@ -129,13 +129,13 @@ class Lift:
         self._sock.setblocking(False)
 
         start_ts = time.time()
-        while self._current_speed == None:
-            self._send_speed(0)
+        while self._recv_responses() == None:
+            self._send_timeout(self.timeout_s)
             if start_ts + timeout_s < time.time():
                 self.disconnect()
                 raise LiftConnectionException(
                     "No response in {}s from lift in initial connect".format(timeout_s))
-            self._recv_responses(0)
+
             time.sleep(self.update_interval_s)
 
         logger.info("connection to '{}' established".format(self.wifi.ssid))
@@ -202,11 +202,11 @@ class Lift:
             raise LiftConnectionException(
                 "No response from lift since {} s.".format(delay))
 
-    def _send_speed(self, speed: int):
-        """Send a speed command to the connected lift.
+    def _send(self, cmd: str):
+        """Send a command to the connected lift.
 
         Args:
-            speed (int): speed to be send
+            cmd (str): command to be send
 
         Raises:
             LiftConnectionException: If not connected to a lift.
@@ -215,16 +215,35 @@ class Lift:
         if not self._sock:
             raise LiftConnectionException("Not connected to a lift")
 
-        self._check_limits(speed)
-
-        request = "speed {}".format(speed).encode()
         try:
-            self._sock.sendto(request, (self.ip, self.port))
+            self._sock.sendto(cmd, (self.ip, self.port))
         except OSError as e:
             raise LiftConnectionException(
-                "Sending speed to lift failed: {}".format(e))
+                "Sending to lift failed: {}".format(e))
 
-    def _recv_responses(self, speed_request):
+    def _send_speed(self, speed: int):
+        """Send a speed command to the connected lift.
+
+        Args:
+            speed (int): speed to be send
+        """
+
+        self._check_limits(speed)
+        cmd = "speed {}".format(speed).encode()
+        self._send(cmd)
+
+    def _send_timeout(self, timeout_s: int):
+        """Send a speed command to the connected lift.
+
+        Args:
+            timeout_s (int): timeout to be send in seconds
+        """
+
+        timeout_ms = (int)(timeout_s * 1000)
+        cmd = "timeout {}".format(timeout_ms).encode()
+        self._send(cmd)
+
+    def _recv_responses(self):
         """Receive latest responses from the connected lift.
 
         Raises:
@@ -234,24 +253,31 @@ class Lift:
         if not self._sock:
             raise LiftConnectionException("Not connected to a lift")
 
+        argv = None
+
         while True:
             try:
                 response = self._sock.recvfrom(65565)[0].decode()
                 self._last_response_ts = time.time()
             except BlockingIOError:
-                return
+                return argv
 
-            cmd, speed_response_str = response.split()
+            logger.debug("received '{}'".format(response[:-1]))
+            argv = response.split()
 
-            if cmd == "set":
-                speed_response = int(speed_response_str)
-                self._current_speed = speed_response
-                if speed_request != speed_response:
-                    logger.info("Received speed ({}) does not match requested ({})".format(
-                        speed_response, speed_request))
+            if argv[0] == "speed":
+                argv[1] = int(argv[1])
+                self._current_speed = argv[1]
+                logger.info("speed acknowledged: {}".format(
+                    self._current_speed))
+            elif argv[0] == "timeout":
+                argv[1] = float(argv[1]) / 1000.0
+                self.timeout_s = argv[1]
+                logger.info("Timeout acknowledged: {}".format(
+                    self.timeout_s))
             else:
                 raise LiftConnectionException(
-                    "Unknown Response from lift: '{}'".format(cmd))
+                    "Unknown Response from lift: '{}'".format(argv[0]))
 
     def _move(self, speed: int, moving_time_s: float = 300.0):
         """Move the lift for a period of time with a provided speed until the top or bottom is reached.
@@ -281,7 +307,7 @@ class Lift:
 
             try:
                 self._send_speed(speed)
-                self._recv_responses(speed)
+                self._recv_responses()
                 self._check_timeout()
 
             except LiftConnectionException as e:
