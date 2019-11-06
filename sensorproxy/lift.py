@@ -93,6 +93,8 @@ class Lift:
         self._sock = None
         self._current_speed = None
         self._last_response_ts = None
+        self.last_time_timed_out = False
+        self.number_of_wifi_losses = 0
 
         # gpio initialization
         gpio.setmode(gpio.BCM)
@@ -199,8 +201,14 @@ class Lift:
 
         delay = time.time() - self._last_response_ts
         if delay > self.timeout_s:
+            if not self.last_time_timed_out:
+                self.number_of_wifi_losses += 1
+                logger.debug("Connection losses: {}".format(self.number_of_wifi_losses))
+            self.last_time_timed_out = True
             raise LiftConnectionException(
                 "No response from lift since {} s.".format(delay))
+        else:
+            self.last_time_timed_out = False
 
     def _send(self, cmd: str):
         """Send a command to the connected lift.
