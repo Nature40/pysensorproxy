@@ -28,21 +28,23 @@ class Sensor:
         self.uses_height = uses_height
         self.file_ext = file_ext
 
-        self._filename_format = "{_id}-{_class}-{_name}-{_custom}.{_file_ext}"
+        self._filename_format = "{_class}/{_ts}-{_id}-{_name}-{_custom}.{_file_ext}"
+        file_path = self._generate_filename(Sensor.time_repr())
+        os.makedirs(os.path.dirname(file_path))
 
         self._lock = threading.Lock()
         super().__init__()
 
-    def _generate_filename(self, custom: [str]):
-        _filename_format = "{_id}-{_class}-{_sensor}-{_custom}.{_file_ext}"
-
-        _id = self.proxy.id
-        _class = self.__class__.__name__
-        _sensor = self.name
-        _file_ext = self.file_ext
-        _custom = "-".join(custom)
-
-        return _filename_format.format(**locals())
+    def _generate_filename(self, _ts: str, custom: [str] = []):
+        return self._filename_format.format(
+            _ts=_ts,
+            _class=self.__class__.__name__,
+            _id=self.proxy.id,
+            _sensor=self.name,
+            _file_ext=self.file_ext,
+            _name=self.name,
+            _custom="-".join(custom),
+        )
 
     @staticmethod
     def _parse_filename(filename):
@@ -112,7 +114,7 @@ class LogSensor(Sensor):
 
     def refresh(self):
         # generate new path
-        file_name = self._generate_filename([Sensor.time_repr()])
+        file_name = self._generate_filename(Sensor.time_repr())
         self.__file_path = os.path.join(
             self.proxy.storage_path, self.proxy.hostname, file_name)
 
@@ -203,7 +205,7 @@ class FileSensor(Sensor):
     """Class for sensors logging more complex data to binary files."""
 
     def get_file_path(self):
-        custom = [Sensor.time_repr()]
+        custom = []
 
         # append height if available
         if self.uses_height:
@@ -213,7 +215,7 @@ class FileSensor(Sensor):
                         self.proxy.lift._current_height_m)
                     custom.append(height)
 
-        file_name = self._generate_filename(custom)
+        file_name = self._generate_filename(Sensor.time_repr(), custom)
 
         # generate and return full path
         return os.path.join(self.proxy.storage_path, self.proxy.hostname, file_name)
