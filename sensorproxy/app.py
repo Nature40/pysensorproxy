@@ -382,9 +382,6 @@ def main():
         default="/boot/meterings.yml",
     )
     parser.add_argument(
-        "-p", "--port", help="bind port for web interface", default=80, type=int
-    )
-    parser.add_argument(
         "-v", "--verbose", help="verbose output", action="count", default=0
     )
     parser.add_argument(
@@ -406,11 +403,6 @@ def main():
         return
 
     os.chdir(proxy.storage_path)
-    Handler = http.server.SimpleHTTPRequestHandler
-    httpd = socketserver.TCPServer(("", args.port), Handler)
-
-    httpd_thread = threading.Thread(target=httpd.serve_forever)
-    httpd_thread.start()
     proxy.run()
 
 
