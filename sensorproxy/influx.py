@@ -115,7 +115,7 @@ class InfluxDBSensorClient(InfluxDBClient):
             "sensor": _sensor,
         }
 
-        self.write_points(points=[body], tags=tags, time_precision="s")
+        was_succesfull = self.write_points(points=[body], tags=tags, time_precision="s")
 
     def publish_csv(self, csv_path: str, _class: str, _hostname: str, _id: str, _sensor: str):
         logger.info("Sending {} to InfluxDB".format(csv_path))
@@ -127,4 +127,4 @@ class InfluxDBSensorClient(InfluxDBClient):
             "sensor": _sensor,
         }
 
-        self.write_points(points=points, tags=tags, time_precision="s")
+        was_succesful = self.write_points(points=points, tags=tags, time_precision="s")

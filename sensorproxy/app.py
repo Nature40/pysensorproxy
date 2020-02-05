@@ -13,9 +13,12 @@ import time
 import yaml
 import subprocess
 import sys
+import sunrise as sun
+
 
 import schedule
 from pytimeparse import parse as parse_time
+
 
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
@@ -46,6 +49,7 @@ def run_threaded(job_func, *args):
 
 class SensorProxy:
     def __init__(self, config_path, metering_path, test=False):
+        self.s = sun(lat=49, long=3)
         self.config_path = config_path
 
         logger.info("loading config file '{}'".format(config_path))
@@ -303,11 +307,22 @@ class SensorProxy:
         # default values for start and end (whole day)
         start = 0
         end = 24 * 60 * 60
+        self.s.sunrise(when=datetime.datetime.now())
 
         if "start" in metering["schedule"]:
-            start = parse_time(metering["schedule"]["start"])
+            if "sunrise" in metering["schedule"]["start"]:
+                pass
+            elif "sunset" in metering["schedule"]["start"]:
+                pass
+            else:
+                start = parse_time(metering["schedule"]["start"])
         if "end" in metering["schedule"]:
-            end = parse_time(metering["schedule"]["end"])
+            if "sunrise" in metering["schedule"]["end"]:
+                pass
+            elif "sunset" in metering["schedule"]["end"]:
+                pass
+            else:
+                end = parse_time(metering["schedule"]["end"])
 
         interval = parse_time(metering["schedule"]["interval"])
 
@@ -321,9 +336,8 @@ class SensorProxy:
             ts = datetime.datetime.fromtimestamp(day_second)
             time = ts.time()
 
-            s = schedule.every().day
-            s.at_time = time
-            s.do(run_threaded, self._run_metering, name, metering)
+            schedule.at_time = time
+            schedule.do(run_threaded, self._run_metering, name, metering)
 
         if start < end:
             for day_second in range(start, end, interval):
@@ -340,12 +354,14 @@ class SensorProxy:
                 schedule_day_second(day_second)
 
     def run(self):
-        for name, metering in self.meterings.items():
-            self._schedule_metering(name, metering)
-
+        self.schedule()
         while True:
             schedule.run_pending()
             time.sleep(1)
+
+    def schedule_meterings(self):
+        for name, metering in self.meterings.items():
+            self._schedule_metering(name, metering)
 
 
 def setup_logging(level):
@@ -411,6 +427,10 @@ def main():
 
     httpd_thread = threading.Thread(target=httpd.serve_forever)
     httpd_thread.start()
+
+    s = schedule.every().day
+    s.at_time = 0
+    s.do(run_threaded, proxy.schedule_meterings)
     proxy.run()
 
 
