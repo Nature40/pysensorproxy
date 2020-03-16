@@ -101,8 +101,8 @@ def _influx_process_csv(csv_path: str, measurement: str, tag_prefix: str):
 
 
 class InfluxDBSensorClient(InfluxDBClient):
-    def __init__(self, *args, tag_prefix="#", **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, tag_prefix="#", **kwargs):
+        super().__init__(**kwargs)
         self.tag_prefix = tag_prefix
 
     def publish(self, header: [str], row: [], _class: str, _hostname: str, _id: str, _sensor: str):

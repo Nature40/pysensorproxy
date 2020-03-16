@@ -1,13 +1,13 @@
 import time
 import logging
 
-from .base import register_sensor, LogSensor, SensorNotAvailableException
+from .base import register_sensor, Sensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class LoggingHandler(logging.Handler, LogSensor):
+class LoggingHandler(logging.Handler, Sensor):
     def __init__(self, *args, level: str = "WARNING", logger_name: str = "sensorproxy", influx_publish=False, **kwargs):
         if level.upper() not in logging._nameToLevel:
             raise SensorNotAvailableException(
@@ -15,7 +15,7 @@ class LoggingHandler(logging.Handler, LogSensor):
 
         level_num = logging._nameToLevel[level.upper()]
         logging.Handler.__init__(self, level_num)
-        LogSensor.__init__(self, *args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
 
         root = logging.getLogger(logger_name)
         root.addHandler(self)
@@ -28,7 +28,7 @@ class LoggingHandler(logging.Handler, LogSensor):
         "Message",
     ]
 
-    def record(self, *args, **kwargs):
+    def record(self, **kwargs):
         raise SensorNotAvailableException(
             "The Logger sensor can't be called explicitly, but is called when writing to the log.")
 

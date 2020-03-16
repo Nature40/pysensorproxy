@@ -5,13 +5,13 @@ import Adafruit_DHT
 import tsl2561
 import w1thermsensor
 
-from .base import register_sensor, LogSensor, SensorNotAvailableException
+from .base import register_sensor, Sensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class AM2302(LogSensor):
+class AM2302(Sensor):
     def __init__(self, *args, pin: int, **kwargs):
         super().__init__(*args, uses_height=True, **kwargs)
 
@@ -22,7 +22,7 @@ class AM2302(LogSensor):
         "Humidity (%)",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading AM2302 sensor on pin {}".format(self.pin))
 
         try:
@@ -42,7 +42,7 @@ class AM2302(LogSensor):
 
 
 @register_sensor
-class DS18B20(LogSensor):
+class DS18B20(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, uses_height=True, **kwargs)
 
@@ -50,7 +50,7 @@ class DS18B20(LogSensor):
         "Temperature (°C)",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading DS18B20 sensor")
 
         try:
@@ -66,7 +66,7 @@ class DS18B20(LogSensor):
 
 
 @register_sensor
-class TSL2561(LogSensor):
+class TSL2561(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, uses_height=True, **kwargs)
 
@@ -76,7 +76,7 @@ class TSL2561(LogSensor):
         "ir",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading TSL2561 sensor via i2c")
 
         try:

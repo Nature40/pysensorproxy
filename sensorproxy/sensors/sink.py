@@ -47,7 +47,7 @@ class Sink(Sensor):
         except Exception as e:
             logger.warn("Publishing on infux failed: {}".format(e))
 
-    def record(self, *args, influx_publish: bool = True, ** kwargs):
+    def record(self, influx_publish: bool = True, ** kwargs):
         if not os.path.isdir(self.input_directory):
             raise SensorNotAvailableException(
                 "Input directory '{}' is not existing.".format(self.input_directory))

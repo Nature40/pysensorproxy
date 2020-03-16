@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class Sensor:
     """Abstract sensor class"""
 
-    def __init__(self, proxy, name: str, uses_height: bool, file_ext: str, ** kwargs):
+    def __init__(self, proxy, name: str, uses_height: bool, ** kwargs):
         """
         Args:
             name (str): given name of the sensor
@@ -26,23 +26,19 @@ class Sensor:
         self.proxy = proxy
         self.name = name
         self.uses_height = uses_height
-        self.file_ext = file_ext
 
-        self._filename_format = "{_class}/{_ts}-{_id}-{_name}-{_custom}.{_file_ext}"
-        file_path = self._generate_filename(Sensor.time_repr())
-        os.makedirs(os.path.dirname(file_path))
+        self._filename_format = "{_class}/{_ts}-{_id}-{_sensor}-{_custom}"
+        self.refresh()
 
         self._lock = threading.Lock()
         super().__init__()
 
     def _generate_filename(self, _ts: str, custom: [str] = []):
         return self._filename_format.format(
-            _ts=_ts,
             _class=self.__class__.__name__,
+            _ts=_ts,
             _id=self.proxy.id,
             _sensor=self.name,
-            _file_ext=self.file_ext,
-            _name=self.name,
             _custom="-".join(custom),
         )
 
@@ -56,11 +52,37 @@ class Sensor:
 
         return tags
 
+    def refresh(self):
+        """Refresh the sensor, e.g. creating a new file."""
+
+        # set a valid file path
+        file_name = self._generate_filename(Sensor.time_repr()) + ".csv"
+        self.__file_path = os.path.join(
+            self.proxy.storage_path, self.proxy.hostname, file_name)
+
+        # create the regarding directory
+        try:
+            os.makedirs(os.path.dirname(self.__file_path))
+        except FileExistsError:
+            pass
+
+        # initialize the file
+        with open(self.__file_path, "a") as csv_file:
+            writer = csv.writer(csv_file)
+            writer.writerow(self.header)
+            csv_file.flush()
+
+    def get_file_path(self):
+        if not os.path.exists(self.__file_path):
+            self.refresh()
+
+        return self.__file_path
+
     @property
     def _header_start(self):
         if self.uses_height and self.proxy.lift:
-            return ["Time (s)", "#Height (m)"]
-        return ["Time (s)"]
+            return ["Time (date)", "#Height (m)"]
+        return ["Time (date)"]
 
     _header_sensor = []
 
@@ -68,36 +90,14 @@ class Sensor:
     def header(self):
         return self._header_start + self._header_sensor
 
-    @abstractmethod
-    def record(self, *args, height_m: float = None, count: int = 1, delay: str = "0s", tries=2, **kwargs):
-        """Read the sensor and write the value. """
-        pass
-
-    @abstractmethod
-    def refresh(self):
-        """Refresh the sensor, e.g. creating a new file."""
-        pass
-
-    @abstractmethod
-    def get_file_path(self):
-        pass
-
     @staticmethod
     def time_repr():
         """Current time, formatted."""
 
         return time.strftime("%Y-%m-%dT%H%M%S", time.gmtime())
 
-
-class LogSensor(Sensor):
-    """Class for sensors logging simple values per record."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, file_ext="csv", **kwargs)
-        self.refresh()
-
     @abstractmethod
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         """Read the sensor.
 
         Returns:
@@ -106,24 +106,7 @@ class LogSensor(Sensor):
 
         pass
 
-    def get_file_path(self):
-        if not os.path.exists(self.__file_path):
-            self.refresh()
-
-        return self.__file_path
-
-    def refresh(self):
-        # generate new path
-        file_name = self._generate_filename(Sensor.time_repr())
-        self.__file_path = os.path.join(
-            self.proxy.storage_path, self.proxy.hostname, file_name)
-
-        with open(self.__file_path, "a") as csv_file:
-            writer = csv.writer(csv_file)
-            writer.writerow(self.header)
-            csv_file.flush()
-
-    def record(self, *args, count: int = 1, delay: str = "0s", tries=2, **kwargs):
+    def record(self, count: int = 1, delay: str = "0s", tries=2, **kwargs):
         logger.debug("acquire access to {}".format(self.name))
         self._lock.acquire()
         records = []
@@ -133,11 +116,11 @@ class LogSensor(Sensor):
             for num in range(count * tries):
                 try:
                     ts = Sensor.time_repr()
-                    reading = self._read(*args, **kwargs)
+                    reading = self._read(**kwargs)
                     if len(reading) != len(self._header_sensor):
                         raise SensorNotAvailableException("Reading length ({}) does not match header length ({}).".format(
                             len(reading), len(self._header_sensor)))
-                    self._publish(ts, reading, *args, **kwargs)
+                    self._publish(ts, reading, **kwargs)
 
                     records.append(reading)
                     successful += 1
@@ -164,7 +147,7 @@ class LogSensor(Sensor):
 
         return records
 
-    def _publish(self, ts, reading, *args, influx_publish: bool = False, height_m: float = None, **kwargs):
+    def _publish(self, ts, reading, influx_publish: bool = False, height_m: float = None, **kwargs):
         file_path = self.get_file_path()
 
         if self.uses_height and self.proxy.lift:
@@ -204,65 +187,14 @@ class LogSensor(Sensor):
 class FileSensor(Sensor):
     """Class for sensors logging more complex data to binary files."""
 
-    def get_file_path(self):
-        custom = []
+    def __init__(self, *args, file_ext: str, **kwargs):
+        self.file_ext = file_ext
+        super().__init__(*args, **kwargs)
 
-        # append height if available
-        if self.uses_height:
-            if self.proxy.lift:
-                if self.proxy.lift._current_height_m:
-                    height = "{}m".format(
-                        self.proxy.lift._current_height_m)
-                    custom.append(height)
-
-        file_name = self._generate_filename(Sensor.time_repr(), custom)
-
-        # generate and return full path
+    def generate_path(self):
+        file_name = self._generate_filename(
+            Sensor.time_repr()) + "." + self.file_ext
         return os.path.join(self.proxy.storage_path, self.proxy.hostname, file_name)
-
-    @abstractmethod
-    def _read(self, file_path: str, *args, **kwargs):
-        """Read the sensor.
-
-        Args:
-            file_path (str): path to save the file
-        """
-
-        pass
-
-    def record(self, *args, count: int = 1, delay: str = "0s", tries=2, **kwargs):
-        logger.debug("acquire access to {}".format(self.name))
-        self._lock.acquire()
-        successful = 0
-
-        try:
-            for num in range(count * tries):
-                try:
-                    file_path = self.get_file_path()
-                    self._read(file_path, *args, **kwargs)
-                    successful += 1
-                    logger.debug(
-                        "Sensor '{}' measured correctly (try {}/{}, {} successful).".format(
-                            self.name, num+1, count*tries, successful))
-
-                    if successful < count:
-                        time.sleep(parse_time(delay))
-                    else:
-                        break
-
-                except SensorNotAvailableException as e:
-                    logger.warn(
-                        "Sensor '{}' measurement failed (try {}/{}, {} successful): {}".format(self.name, num+1, count*tries, successful, e))
-
-        finally:
-            if successful < count:
-                logger.error(
-                    "Sensor '{}': {} successful of {} requested measurements.".format(self.name, successful, count))
-
-            logger.debug("release access to {}".format(self.name))
-            self._lock.release()
-
-        return file_path
 
 
 classes = {}

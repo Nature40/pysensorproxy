@@ -3,13 +3,13 @@ import os
 import random
 import logging
 
-from .base import register_sensor, LogSensor, FileSensor
+from .base import register_sensor, Sensor, FileSensor
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class Random(LogSensor):
+class Random(Sensor):
     def __init__(self, *args, maximum=100, **kwargs):
         super().__init__(*args, uses_height=False, **kwargs)
 
@@ -19,17 +19,23 @@ class Random(LogSensor):
         "Random Integer",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         return [random.randint(0, self.maximum)]
 
 
 @register_sensor
 class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, file_ext="bin", uses_height=False, **kwargs)
+        super().__init__(*args, uses_height=False, file_ext="bin", **kwargs)
 
-    def _read(self, file_path, bytes, *args, **kwargs):
+    _header_sensor = [
+        "Filename",
+    ]
+
+    def _read(self, bytes, **kwargs):
+        file_path = self.generate_path()
+
         with open(file_path, "ab") as file:
             file.write(os.urandom(bytes))
 
-        return file_path
+        return [file_path]

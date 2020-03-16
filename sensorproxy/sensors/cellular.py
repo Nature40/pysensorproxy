@@ -3,13 +3,13 @@ import logging
 import urllib
 import json
 
-from .base import register_sensor, LogSensor, SensorNotAvailableException
+from .base import register_sensor, Sensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class TelekomVolume(LogSensor):
+class TelekomVolume(Sensor):
     def __init__(self, *args, endpoint_uri: str = "http://pass.telekom.de/api/service/generic/v1/status", **kwargs):
         super().__init__(*args, uses_height=False, ** kwargs)
 
@@ -21,7 +21,7 @@ class TelekomVolume(LogSensor):
         "Remaining Time (Days)",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading Telekom data plan information.")
 
         try:

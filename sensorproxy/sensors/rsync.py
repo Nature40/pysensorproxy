@@ -2,14 +2,14 @@ import logging
 import subprocess
 import os
 
-from .base import register_sensor, Sensor, LogSensor, SensorNotAvailableException
+from .base import register_sensor, Sensor, Sensor, SensorNotAvailableException
 from sensorproxy.wifi import WiFi, WiFiManager
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class RsyncSender(LogSensor):
+class RsyncSender(Sensor):
     def __init__(self, *args, ssid: str, psk: str, destination: str, **kwargs):
         super().__init__(*args, uses_height=False, **kwargs)
 
@@ -31,7 +31,7 @@ class RsyncSender(LogSensor):
 
         return cmd
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         if self.proxy.wifi_mgr:
             logger.info("connecting to WiFi '{}'".format(self.wifi.ssid))
             self.proxy.wifi_mgr.connect(self.wifi)

@@ -51,7 +51,7 @@ class Microphone(FileSensor):
                 "amixer returned {}: {}".format(p.returncode, stderr.decode())
             )
 
-    def _read(self, file_path: str, duration: str, *args, **kwargs):
+    def _read(self, file_path: str, duration: str, **kwargs):
         device_name = "hw:{},{}".format(self.card, self.device)
         duration_s = parse_time(duration)
 

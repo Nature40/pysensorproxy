@@ -4,13 +4,13 @@ import logging
 import psutil
 import gpiozero
 
-from .base import register_sensor, LogSensor, SensorNotAvailableException
+from .base import register_sensor, Sensor, SensorNotAvailableException
 
 logger = logging.getLogger(__name__)
 
 
 @register_sensor
-class CPU(LogSensor):
+class CPU(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, uses_height=False, **kwargs)
 
@@ -23,7 +23,7 @@ class CPU(LogSensor):
         "Uptime (s)",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading CPU usage using psutil")
         cpu_usage = psutil.cpu_percent()
 
@@ -44,7 +44,7 @@ class CPU(LogSensor):
 
 
 @register_sensor
-class Memory(LogSensor):
+class Memory(Sensor):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, uses_height=False, **kwargs)
 
@@ -54,7 +54,7 @@ class Memory(LogSensor):
         "Memory Free (MiB)",
     ]
 
-    def _read(self, *args, **kwargs):
+    def _read(self, **kwargs):
         logger.debug("Reading Memory usage using psutil")
 
         m = psutil.virtual_memory()

@@ -18,7 +18,7 @@ class PiCamera(FileSensor):
 
         self.format = img_format
 
-    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, *args, **kwargs):
+    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, **kwargs):
         adjust_time_s = parse_time(adjust_time)
 
         logger.debug("Reading PiCamera with {}x{} for {}s".format(
@@ -97,7 +97,7 @@ class IRCutCamera(PiCamera):
         raise SensorNotAvailableException(
             "Could not find gpio base for {}".format(gpiochip_labels))
 
-    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, *args, **kwargs):
+    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, filter_ir: bool = False, **kwargs):
         adjust_time_s = parse_time(adjust_time)
 
         logger.debug("Reading IrCutCamera with {}x{} for {}s".format(

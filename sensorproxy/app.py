@@ -24,6 +24,7 @@ import sensorproxy.sensors.energy
 import sensorproxy.sensors.environment
 import sensorproxy.sensors.logger
 import sensorproxy.sensors.optical
+import sensorproxy.sensors.random
 import sensorproxy.sensors.rsync
 import sensorproxy.sensors.sink
 import sensorproxy.sensors.system
@@ -79,7 +80,7 @@ class SensorProxy:
         if not test:
             self._reset_lift()
 
-    def _init_identifiers(self, *args, id: str = None, **kwargs):
+    def _init_identifiers(self, id: str = None, **kwargs):
         self.hostname = platform.node()
         if not id:
             raise ConfigurationException(
@@ -131,7 +132,7 @@ class SensorProxy:
         logger.info("local {} log is written to {}".format(
             log_level, log_path))
 
-    def _init_optionals(self, *args, wifi=None, lift=None, influx=None, **kwargs):
+    def _init_optionals(self, wifi=None, lift=None, influx=None, **kwargs):
         self.wifi_mgr = None
         if wifi:
             self.wifi_mgr = WiFiManager(**wifi)
@@ -151,7 +152,7 @@ class SensorProxy:
             self.influx = InfluxDBSensorClient(**influx)
             logger.info("using influx at '{}'".format(influx["host"]))
 
-    def _init_sensors(self, *args, sensors={}, **kwargs):
+    def _init_sensors(self, sensors={}, **kwargs):
         self.sensors = {}
         for name, params in sensors.items():
             sensor_cls = sensorproxy.sensors.base.classes[params["type"]]
