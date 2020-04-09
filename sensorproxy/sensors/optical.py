@@ -74,8 +74,7 @@ class IRCutCamera(PiCamera):
 
         gpio_base = self.__gpiochip_label_base(gpiochip_labels)
         self.cam_gpio = gpio_base + cam_led
-        self.cam_gpio_path = "/sys/class/gpio/gpio{}/value".format(
-            self.cam_gpio)
+        self.cam_gpio_path = "/sys/class/gpio/gpio{}/value".format(self.cam_gpio)
 
         # export the requested gpio port
         if not os.path.exists(self.cam_gpio_path):
@@ -117,6 +116,45 @@ class IRCutCamera(PiCamera):
 
                 camera.capture(file_path, format=self.format)
                 camera.stop_preview()
+        except picamera.exc.PiCameraMMALError as e:
+            raise SensorNotAvailableException(e)
+        except picamera.exc.PiCameraError as e:
+            raise SensorNotAvailableException(e)
+
+        logger.info("image file written to '{}'".format(file_path))
+
+
+@register_sensor
+class IRPlusLEDCamera(IRCutCamera):
+    """Special construction of a PiNoirCamera with additional LEDs
+
+    We want to use the specified gpio pin to switch on the LEDs and wait a short moment to adjust the focus
+    """
+    def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, **kwargs):
+        adjust_time_s = parse_time(adjust_time)
+
+        logger.debug("Reading IrCutCamera with {}x{} for {}s".format(
+            res_X, res_Y, adjust_time_s))
+
+        try:
+            with picamera.PiCamera() as camera:
+                camera.resolution = (res_X, res_Y)
+                camera.start_preview()
+
+                # set led gpio pin to True => switch on the leds
+                with open(self.cam_gpio_path, "a") as gpio_file:
+                    gpio_file.write(str(int(True)))
+                    time.sleep(2)
+
+                time.sleep(adjust_time_s)
+
+                camera.capture(file_path, format=self.format)
+                camera.stop_preview()
+
+                # set led gpio pin to False => switch off the leds
+                with open(self.cam_gpio_path, "a") as gpio_file:
+                    gpio_file.write(str(int(True)))
+                    time.sleep(2)
         except picamera.exc.PiCameraMMALError as e:
             raise SensorNotAvailableException(e)
         except picamera.exc.PiCameraError as e:
