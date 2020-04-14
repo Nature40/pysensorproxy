@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 @register_sensor
 class LED(Sensor):
-    def __init__(self, *args, cam_led: int = 6, gpiochip_labels: [str] = ["raspberrypi-exp-gpio", "brcmexp-gpio"], **kwargs):
+    def __init__(self, *args, cam_led: int = 21, gpiochip_labels: [str] = ["raspberrypi-exp-gpio", "brcmexp-gpio"], **kwargs):
         super().__init__(*args, ** kwargs)
         gpio_base = self.__gpiochip_label_base(gpiochip_labels)
         self.led_gpio = gpio_base + cam_led

@@ -125,13 +125,15 @@ class IRCutCamera(PiCamera):
 
 
 @register_sensor
-class IRPlusLEDCamera(IRCutCamera):
+class IRPlusLEDCamera(PiCamera):
     """Special construction of a PiNoirCamera with additional LEDs
 
     We want to use the specified gpio pin to switch on the LEDs and wait a short moment to adjust the focus
     """
     def _read(self, file_path: str, res_X: int, res_Y: int, adjust_time: str, **kwargs):
         adjust_time_s = parse_time(adjust_time)
+
+        os.system("sudo i2cset -y 0 0x70 0x09 0x0f")
 
         logger.debug("Reading IrCutCamera with {}x{} for {}s".format(
             res_X, res_Y, adjust_time_s))
@@ -142,9 +144,7 @@ class IRPlusLEDCamera(IRCutCamera):
                 camera.start_preview()
 
                 # set led gpio pin to True => switch on the leds
-                with open(self.cam_gpio_path, "a") as gpio_file:
-                    gpio_file.write(str(int(True)))
-                    time.sleep(2)
+                os.system("sudo i2cset -y 0 0x70 0x00 0xff")
 
                 time.sleep(adjust_time_s)
 
@@ -152,9 +152,8 @@ class IRPlusLEDCamera(IRCutCamera):
                 camera.stop_preview()
 
                 # set led gpio pin to False => switch off the leds
-                with open(self.cam_gpio_path, "a") as gpio_file:
-                    gpio_file.write(str(int(True)))
-                    time.sleep(2)
+
+                os.system("sudo i2cset -y 0 0x70 0x00 0x00")
         except picamera.exc.PiCameraMMALError as e:
             raise SensorNotAvailableException(e)
         except picamera.exc.PiCameraError as e:
