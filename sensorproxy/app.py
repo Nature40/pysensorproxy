@@ -17,6 +17,7 @@ import sys
 import schedule
 from pytimeparse import parse as parse_time
 
+import sensorproxy.sensors.illumination
 import sensorproxy.sensors.audio
 import sensorproxy.sensors.base
 import sensorproxy.sensors.cellular

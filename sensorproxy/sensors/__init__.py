@@ -9,4 +9,5 @@ __all__ = [
     "rsync",
     "sink",
     "system",
+    "illumination"
 ]
