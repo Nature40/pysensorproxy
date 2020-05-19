@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class Random(Sensor):
     def __init__(self, *args, maximum=100, **kwargs):
-        super().__init__(*args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
 
         self.maximum = maximum
 
@@ -26,11 +26,10 @@ class Random(Sensor):
 @register_sensor
 class RandomFile(FileSensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uses_height=False, file_ext="bin", **kwargs)
+        FileSensor.__init__(self, *args, uses_height=False,
+                            file_ext="bin", **kwargs)
 
-    _header_sensor = [
-        "Filename",
-    ]
+    _header_sensor = FileSensor._header_sensor + ["Size (bytes)"]
 
     def _read(self, bytes, **kwargs):
         file_path = self.generate_path()
@@ -38,4 +37,4 @@ class RandomFile(FileSensor):
         with open(file_path, "ab") as file:
             file.write(os.urandom(bytes))
 
-        return [file_path]
+        return [file_path, bytes]

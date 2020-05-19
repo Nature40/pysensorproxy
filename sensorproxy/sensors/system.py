@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class CPU(Sensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
 
     _header_sensor = [
         "CPU Usage (%)",
@@ -46,7 +46,7 @@ class CPU(Sensor):
 @register_sensor
 class Memory(Sensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
 
     _header_sensor = [
         "Memory Available (MiB)",

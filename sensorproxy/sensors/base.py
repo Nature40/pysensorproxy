@@ -189,12 +189,18 @@ class FileSensor(Sensor):
 
     def __init__(self, *args, file_ext: str, **kwargs):
         self.file_ext = file_ext
-        super().__init__(*args, **kwargs)
+        Sensor.__init__(self, *args, **kwargs)
+
+    _header_sensor = [
+        "File path",
+    ]
 
     def generate_path(self):
         file_name = self._generate_filename(
             Sensor.time_repr()) + "." + self.file_ext
-        return os.path.join(self.proxy.storage_path, self.proxy.hostname, file_name)
+        return os.path.join(self.proxy.storage_path,
+                            self.proxy.hostname,
+                            file_name)
 
 
 classes = {}

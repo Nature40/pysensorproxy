@@ -15,7 +15,8 @@ class Sink(Sensor):
     """
 
     def __init__(self, *args, input_directory, **kwargs):
-        super().__init__(*args, file_ext=None, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, file_ext=None,
+                        uses_height=False, **kwargs)
 
         # create input directory
         try:

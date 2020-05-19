@@ -50,7 +50,7 @@ class SensorProxy:
     def __init__(self, config_path, metering_path, test=False):
         self.config_path = config_path
 
-        logger.info("loading config file '{}'".format(config_path))
+        logger.info(f"loading config file '{config_path}'")
         with open(config_path) as config_file:
             config = yaml.load(config_file, Loader=yaml.Loader)
 
@@ -59,8 +59,7 @@ class SensorProxy:
 
         if system_time < config_mod_time:
             logger.critical(
-                "Current system time {} is before creation of the config file {}.".format(
-                    system_time, config_mod_time))
+                f"Current system time {system_time} is before creation of the config file {config_mod_time}.")
             logger.critical(
                 "Time travel is not yet available, so the system time seems to be wrong.")
             sys.exit("Wrong system time, aborting execution.")
@@ -72,7 +71,7 @@ class SensorProxy:
         self._init_optionals(**config)
         self._init_sensors(**config)
 
-        logger.info("loading metering file '{}'".format(metering_path))
+        logger.info(f"loading metering file '{metering_path}'")
         with open(metering_path) as metering_file:
             self.meterings = yaml.load(metering_file, Loader=yaml.Loader)
 
@@ -90,11 +89,10 @@ class SensorProxy:
         blacklist = "/-."
         if any((c in set(blacklist)) for c in id):
             raise ConfigurationException(
-                "The ID may not contain those characters: '{}'".format(blacklist))
+                f"The ID may not contain those characters: '{blacklist}'")
 
         self.id = id
-        logger.info("Running for id '{}' on host '{}'.".format(
-            self.id, self.hostname))
+        logger.info(f"Running for '{self.id}' on '{self.hostname}'.")
 
     def _init_storage(self, storage_path=".", **kwargs):
         self.storage_path = storage_path
@@ -109,7 +107,7 @@ class SensorProxy:
         except FileExistsError:
             pass
 
-        logger.info("using storage at '{}'".format(storage_path))
+        logger.info(f"using storage at '{storage_path}'")
 
     def _init_local_log(self, storage_path=".", log_level="INFO", **kwargs):
         if log_level.upper() not in logging._nameToLevel:

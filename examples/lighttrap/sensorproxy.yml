@@ -1,0 +1,28 @@
+id: default
+storage_path: /data
+
+sensors:
+  cpu:
+    type: CPU
+  mem:
+    type: Memory
+  datavolume:
+    type: TelekomVolume
+  log:
+    type: LoggingHandler
+  led:
+    type: LED
+    led_pin: 21
+  cam:
+    type: BrightPiCamera
+    bus_id: 2
+
+influx:
+  host: ds.mathematik.uni-marburg.de
+  port: 443
+  path: /influx/
+  ssl: true
+  verify_ssl: true
+  username: sensorboxes
+  password: supersicher
+  database: nature40

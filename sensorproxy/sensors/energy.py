@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class ChargingIndicator(Sensor):
     def __init__(self, *args, charging_incicator_pin: int = 13, **kwargs):
-        super().__init__(*args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
         gpio.setmode(gpio.BCM)
 
         self.charging_incicator_pin = charging_incicator_pin

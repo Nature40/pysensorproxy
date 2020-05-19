@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class AM2302(Sensor):
     def __init__(self, *args, pin: int, **kwargs):
-        super().__init__(*args, uses_height=True, **kwargs)
+        Sensor.__init__(self, *args, uses_height=True, **kwargs)
 
         self.pin = pin
 
@@ -30,7 +30,7 @@ class AM2302(Sensor):
         except RuntimeError as e:
             raise SensorNotAvailableException(e)
 
-        if humid == None or temp == None:
+        if humid is None or temp is None:
             raise SensorNotAvailableException(
                 "No AM2302 instance on pin {}".format(self.pin))
 
@@ -44,7 +44,7 @@ class AM2302(Sensor):
 @register_sensor
 class DS18B20(Sensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uses_height=True, **kwargs)
+        Sensor.__init__(self, *args, uses_height=True, **kwargs)
 
     _header_sensor = [
         "Temperature (°C)",
@@ -68,7 +68,7 @@ class DS18B20(Sensor):
 @register_sensor
 class TSL2561(Sensor):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, uses_height=True, **kwargs)
+        Sensor.__init__(self, *args, uses_height=True, **kwargs)
 
     _header_sensor = [
         "Illuminance (lux)",

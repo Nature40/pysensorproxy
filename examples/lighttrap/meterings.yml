@@ -1,0 +1,22 @@
+# test: basic system monitoring
+# system:
+#   sensors:
+#     datavolume: {}
+#     cpu: {}
+#     mem: {}
+#   schedule:
+#     interval: 1m
+
+# test light and brightpi cam
+cam:
+  sensors:
+    cam: {}
+  schedule:
+    interval: 20s
+
+led:
+  sensors:
+    led:
+      duration: 20s
+  schedule:
+    interval: 40s

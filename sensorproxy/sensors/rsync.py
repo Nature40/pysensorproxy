@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 @register_sensor
 class RsyncSender(Sensor):
     def __init__(self, *args, ssid: str, psk: str, destination: str, **kwargs):
-        super().__init__(*args, uses_height=False, **kwargs)
+        Sensor.__init__(self, *args, uses_height=False, **kwargs)
 
         self.destination = destination
         self.wifi = WiFi(ssid, psk)

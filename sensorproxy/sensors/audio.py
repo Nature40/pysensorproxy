@@ -22,7 +22,8 @@ class Microphone(FileSensor):
             )
             audio_format = "wav"
 
-        super().__init__(*args, file_ext=audio_format, uses_height=True, **kwargs)
+        FileSensor.__init__(self, *args, file_ext=audio_format,
+                            uses_height=True, **kwargs)
 
         self.card = card
         self.device = device
